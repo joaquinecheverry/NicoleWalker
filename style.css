@@ -1,0 +1,199 @@
+html {
+    height: 100vh;
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
+    font-optical-sizing: auto;
+    font-style: normal;
+    overflow-x: hidden;
+}
+
+body {
+    margin: 0;
+    background-color: rgb(255, 255, 255);
+    font-size: 10pt;
+
+}
+
+#nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;   
+    align-items: center; 
+    text-align: left;
+    height: 6.5vh;
+    justify-content: flex-start;
+    width: 100vw;
+    color: white;
+    padding-top: px;
+    font-size: 10pt;
+    overflow-y: hidden;
+    position: fixed;
+    z-index: 20020;
+}
+
+#nav.pattern-active {
+    color: black;
+}
+
+#nav:not(.pattern-active) #Title {
+    mix-blend-mode: difference;
+}
+
+#nav.pattern-active ~ #InfoContent.active {
+    color: black;
+}
+
+#nav.pattern-active ~ #InfoContent.active a {
+    color: black;
+}
+
+#Title { 
+    text-align: left;
+    cursor: pointer;
+    margin-left: 20px;
+    mix-blend-mode: difference;
+    width: 80px;
+}
+
+#Title:hover { 
+    text-decoration: line-through;
+}
+
+#Index { 
+    text-align: center;
+    text-align: left;
+    cursor: pointer;
+    width: 40px;
+}
+
+#Index:hover { 
+    text-decoration: line-through;
+}
+
+#InfoButton { 
+    text-align: left;
+    margin-right: 0;
+    cursor: pointer;
+    width: 20px;
+}
+
+#InfoButton:hover { 
+    text-decoration: line-through;
+}
+
+#main-column {
+    width: 100%;
+    background-color: black;
+}
+
+.project {
+    position: relative;
+    width: 100vw;
+    height: auto;
+    overflow: hidden;
+}
+
+.project img,
+.project video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: auto;
+    transform: translateX(100%);
+    transition: transform 1.6s ease-out;
+}
+
+.project img:first-child,
+.project video:first-child {
+    position: relative;
+}
+
+.project .active {
+    transform: translateX(0);
+}
+
+.project .alt.passed {
+    transform: translateX(-100%);
+}
+
+#index {
+    cursor: pointer  !important;
+}
+#pattern-wrapper {
+    padding-top: 20px;
+    padding-left: 10px;
+
+    box-sizing: border-box;
+}
+
+.label1 {
+    top: 100px !important;
+    justify-content: space-between;
+    width: 100vw;
+    position: absolute;
+}
+.label2 {
+    top: 100px !important;
+    left: 200px;
+    justify-content: space-between;
+    width: 100vw;
+    position: absolute;
+}
+.label3 {
+    top: 100px !important;
+    left: 400px;
+    justify-content: space-between;
+    width: 100vw;
+    position: absolute;
+}
+.label4 {
+    top: 100px !important;
+    left: 600px;
+    justify-content: space-between;
+    width: 100vw;
+    position: absolute;
+}
+
+#InfoContent {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 7.2vh;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 6.5vh);
+    font-size: 10pt;
+    color: white;
+    z-index: 1500;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+a {
+    text-decoration: underline;
+    color: white;
+}
+
+a:hover {
+    text-decoration: none;
+    color: white;
+}
+
+#InfoContent.active {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* Match nav's 3 columns */
+}
+
+#aboutcontact {
+    font-size: 10pt;
+    grid-column: 1; /* First column */
+    position: fixed;
+    padding-left: 20px;
+}
+
+#Clients {
+    grid-column: 3; /* Third column, aligned with Info button */
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    position: fixed;
+    padding-left: 0;
+}
