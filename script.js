@@ -1,3 +1,6 @@
+
+
+
 // Add to your script.js file
 document.getElementById("InfoButton").addEventListener("click", () => {
     const infoPanel = document.getElementById("InfoContent");
@@ -17,6 +20,8 @@ document.getElementById("Title").addEventListener("click", () => {
         }
     }
     
+
+
     const infoPanel = document.getElementById("InfoContent");
     if (infoPanel.classList.contains("active")) {
         infoPanel.classList.remove("active");
@@ -25,205 +30,241 @@ document.getElementById("Title").addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-const projects = [
-    {
-        type: "video",
-        media: ["Selects/YUNGLEANMYAGENDA.mp4"]
-    },
-    {
-        type: "image",
-        media: ["Selects/GUSTAFNILSON2.jpg", "Selects/GUSTAFNILSON1.jpg"] 
-    },
-    {
-        type: "image",
-        media: ["Selects/SCALED6.jpg"]    
-    },
-    {
-        type: "video",
-        media: ["Selects/Ecco2k & bladee - Amygdala (Official Video) - drain gang (1080p, h264).mp4"]  
-    },
-    {
-        type: "video",
-        media: ["Selects/Starz - Yung Lean.mp4"]
-    },
-    {
-        type: "image",
-        media: ["Selects/ULTRALOVE1.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/VN_KK2-1140x1536.jpg", "Selects/VN_KK4-1536x1152.jpg", "Selects/VN_KK5-1536x1183.jpg", "Selects/VN_KK6-1124x1536.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/VN_Nuda_2-scaled.jpg", "Selects/VN_Nuda_7-scaled.jpg", "Selects/VN_Nuda_15-scaled.jpg", "Selects/VN_Nuda_17-scaled.jpg", "Selects/VN_Nuda_23-scaled.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/VN_Stars-4-768x1024.jpg", "Selects/VN_Stars-12-768x1024.jpg", "Selects/VN_Stars-20.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/VN_YL-Merch-22-Winter_Final_6-scaled.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/VNKIDS-2-1024x683.jpg", "Selects/VNKIDS-7.jpg", "Selects/VNKIDS-12-.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/xumYbS3Q.jpeg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/YL5-scaled.jpeg"]
-    },
-    {
-        type: "video",
-        media: ["Selects/Yung Lean - Babyface Maniacs .mp4"]
-    },
-    {
-        type: "image",
-        media: ["Selects/HODAKOVA23-1152x1536.jpeg", "Selects/HODAKOVA29-1152x1536.jpeg", "Selects/HODAKOVA31-1152x1536.jpeg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/IMG_0761.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/INU1.jpg", "Selects/INU2.jpg", "Selects/INU3.jpg", "Selects/INU4.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/NUDAPAPER.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/NUM1.tif", "Selects/NUM2", "Selects/NUM2.tif", "Selects/NUM3", "Selects/NUM4", "Selects/NUM5"]
-    },
-    {
-        type: "image",
-        media: ["Selects/NW_ASB__0036.jpg", "Selects/NW_ASB__0062.jpg", "Selects/NW_ASB__0067.jpg", "Selects/NW_ASB__0082.jpg", "Selects/NW_ASB__0083.jpg", "Selects/NW_ASB__0103.jpg", "Selects/NW_ASB__0109.jpg", "Selects/NW_ASB__0144.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/OFFICECOVER.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/OLLD_4047 copy.jpeg", "Selects/OLLD_5028 copy.jpeg", "Selects/OLLD_5255 copy.jpeg", "Selects/OLLD_5260 copy.jpeg", "Selects/OLLD.jpeg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/032cHEELS4.jpg", "Selects/032cHEELS5.webp", "Selects/032cHEELS6.webp", "Selects/032cHEELS7.jpg", "Selects/032cHEELS8.webp", "Selects/032cHEELS9.jpg", "Selects/032cHEELS10.webp", "Selects/032cHEELS11.webp", "Selects/032cHEELS12.webp", "Selects/032cHEELS13.webp", "Selects/032cHEELS14.jpg"]
-    },
-    {
-        type: "video",
-        media: ["Selects/A virtual project by HAAL - Studio Bon.mp4"]
-    },
-    {
-        type: "video",
-        media: ["Selects/Big Anonymous, the film (by El Perro del Mar).mp4"]
-    },
-    {
-        type: "image",
-        media: ["Selects/BLBA_1668_1-scaled.jpg", "Selects/BLBA_1784-scaled.jpg", "Selects/BLBA_2003-scaled.jpg", "Selects/BLBA_2185-scaled.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/BLBALD.jpeg", "Selects/BLBALD2.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/CARCYCOVER.jpg"]
-    },
-    {
-        type: "video",
-        media: ["Selects/DJ Billybool - BLOMSTE...OOL (1080p, h264).mp4"]
-    },
-    {
-        type: "image",
-        media: ["Selects/EDIT1.jpg"]
-    },
-    {
-        type: "video",
-        media: ["Selects/El Perro del Mar - Dream...l Mar (1080p, h264).mp4"]
-    },
-    {
-        type: "image",
-        media: ["Selects/GOODLUCK1.jpg"]
-    },
-    {
-        type: "image",
-        media: ["Selects/HEAT_SINGLES_06-07.jpg", "Selects/HEAT_SINGLES_10-11.jpg"]
-    }
-];
+// -----------------------------
+// LOAD PROJECTS FROM SANITY
+// -----------------------------
 
 const main = document.getElementById('main-column');
 
-projects.forEach(project => {
-    const container = document.createElement('div');
-    container.classList.add('project');
+// For the Index pattern view
+window.patternSources = [];
 
-    project.media.forEach((src, i) => {
-        let el;
 
-        if (src.endsWith('.mp4') || src.endsWith('.webm')) {
-            el = document.createElement('video');
-            el.src = src;
-            el.autoplay = true;
-            el.loop = true;
-            el.muted = true;
-            el.playsInline = true;
-        } else {
-            el = document.createElement('img');
-            el.src = src;
-        }
 
-        el.classList.add('alt');
-        if (i === 0) el.classList.add('active');
+// -----------------------------
+// GALLERY SLIDER HELPERS
+// -----------------------------
 
-        container.appendChild(el);
+// Move all media for a project side-by-side, with a continuous "offset"
+
+
+
+
+
+function renderProjects(projects) {
+    main.innerHTML = ''; // clear existing
+
+    projects.forEach(project => {
+        const projectEl = document.createElement('div');
+        projectEl.classList.add('project');
+
+        const track = document.createElement('div');
+        track.classList.add('project-track');
+
+        project.media.forEach(item => {
+            const src = typeof item === 'string' ? item : item.url;
+            const type =
+                typeof item === 'string'
+                    ? (src.endsWith('.mp4') || src.endsWith('.webm') ? 'video' : 'image')
+                    : (item.type || 'image');
+
+            const cell = document.createElement('div');
+            cell.classList.add('project-item');
+
+            let el;
+            if (type === 'video') {
+                el = document.createElement('video');
+                el.src = src;
+                el.autoplay = true;
+                el.loop = true;
+                el.muted = true;
+                el.playsInline = true;
+            } else {
+                el = document.createElement('img');
+                el.src = src;
+            }
+
+            cell.appendChild(el);
+            track.appendChild(cell);
+        });
+
+        projectEl.appendChild(track);
+        main.appendChild(projectEl);
     });
 
-    main.appendChild(container);
-});
+    // After rendering, match all heights to the first image per project
+    setProjectHeights();
+    window.addEventListener('resize', setProjectHeights);
+}
 
-// Auto-scroll through projects with multiple images
-window.addEventListener('scroll', () => {
+function setProjectHeights() {
     const projects = document.querySelectorAll('.project');
-    
+
+    projects.forEach(projectEl => {
+        const firstMedia = projectEl.querySelector(
+            '.project-item:first-child img, .project-item:first-child video'
+        );
+        if (!firstMedia) return;
+
+        // Let the browser lay it out, then read its height
+        const rect = firstMedia.getBoundingClientRect();
+        const height = rect.height;
+
+        if (height > 0) {
+            projectEl.style.height = height + 'px';
+        }
+    });
+}
+
+
+// -----------------------------
+// MANUAL HORIZONTAL SWIPE
+// -----------------------------
+
+
+
+// -----------------------------
+// MANUAL HORIZONTAL SWIPE (CONTINUOUS)
+// -----------------------------
+
+function enableHorizontalScrollForProjects() {
+    const projects = document.querySelectorAll('.project');
+
     projects.forEach(project => {
         const mediaElements = project.querySelectorAll('.alt');
-        
         if (mediaElements.length <= 1) return;
-        
+
+        project.addEventListener('wheel', (e) => {
+            const absX = Math.abs(e.deltaX);
+            const absY = Math.abs(e.deltaY);
+
+            // Only react to fairly horizontal gestures
+            if (absX <= absY * 1.5) return;
+            if (absX < 5) return; // ignore tiny noise
+
+            e.preventDefault();
+
+            const count = mediaElements.length;
+            const maxOffset = Math.max(0, count - 1);
+
+            const current = parseFloat(project.dataset.offset || '0');
+
+            // deltaX is in pixels; moving by window.innerWidth px = 1 full image
+            const deltaOffset = e.deltaX / window.innerWidth;
+
+            let next = current + deltaOffset;
+            next = Math.max(0, Math.min(next, maxOffset));
+
+            lastHorizontalInteraction = Date.now();
+            setProjectOffset(project, next);
+        }, { passive: false });
+    });
+}
+
+
+
+
+
+
+// 2. Fetch collections from Sanity
+async function loadProjectsFromSanity() {
+    const projectId  = 'hk21ncs5';  // from studio/sanity.config.ts
+    const dataset    = 'production';            // or your dataset name
+    const apiVersion = '2023-05-03';
+
+    const query = `
+        *[_type == "photoCollection"] | order(order asc) {
+            _id,
+            title,
+            "media": images[]{
+                _type == "imageItem" => {
+                    "type": "image",
+                    "url": asset->url
+                },
+                _type == "videoItem" => {
+                    "type": "video",
+                    "url": file.asset->url
+                }
+            }
+        }
+    `;
+
+    const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=${encodeURIComponent(query)}`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const collections = data.result || [];
+
+        // Collect image URLs for the Index pattern view
+window.patternSources = collections
+  .flatMap(col => col.media || [])
+  .filter(item => item && item.type === 'image')   // only images
+  .map(item => ({
+    thumb: item.url + '?w=100&auto=format',   // lighter for Index orbit
+    full:  item.url + '?w=900&auto=format'  // sharp for zoom view
+  }))
+  .sort(() => 0.5 - Math.random())            // optional shuffle
+  .slice(0, 150);     
+
+
+        // map into the format renderProjects expects
+        const projects = collections.map(col => ({
+            type: 'mixed',
+            media: col.media || []
+        }));
+
+        renderProjects(projects);
+    } catch (err) {
+        console.error('Error loading projects from Sanity:', err);
+    }
+}
+
+// 3. Kick it off
+loadProjectsFromSanity();
+
+
+// -----------------------------
+// AUTO-SCROLL ON VERTICAL
+// -----------------------------
+
+let lastHorizontalInteraction = 0; // defined here so both systems can share it
+
+window.addEventListener('scroll', () => {
+    const projects = document.querySelectorAll('.project');
+
+    projects.forEach(project => {
+        const mediaElements = project.querySelectorAll('.alt');
+        if (mediaElements.length <= 1) return;
+
+        // If user just interacted horizontally, don't fight them immediately
+        if (Date.now() - lastHorizontalInteraction < 400) return;
+
         const rect = project.getBoundingClientRect();
         const projectHeight = rect.height;
         const windowHeight = window.innerHeight;
-        
-        // Calculate how far through the viewport the project is
-        let scrollProgress = (windowHeight - rect.top) / (windowHeight + projectHeight);
-        scrollProgress = Math.max(0, Math.min(1, scrollProgress));
-        
-        const mediaIndex = Math.floor(scrollProgress * mediaElements.length);
-        const clampedIndex = Math.min(mediaIndex, mediaElements.length - 1);
-        
-        mediaElements.forEach((el, i) => {
-            if (i === clampedIndex) {
-                el.classList.add('active');
-                el.classList.remove('passed');
-            } else if (i < clampedIndex) {
-                el.classList.remove('active');
-                el.classList.add('passed');
-            } else {
-                el.classList.remove('active');
-                el.classList.remove('passed');
-            }
-        });
+
+        // 0 → 1 as the project moves through the viewport
+        let raw = (windowHeight - rect.top) / (windowHeight + projectHeight);
+        raw = Math.max(0, Math.min(1, raw));
+
+        // soften sensitivity so it feels medium, not hyper fast
+        let progress = raw * 0.6 + 0.2;
+        progress = Math.max(0, Math.min(1, progress));
+
+        const count = mediaElements.length;
+        const maxOffset = Math.max(0, count - 1);
+
+        const targetOffset = progress * maxOffset;
+
+        // small smoothing so it doesn't jerk
+        const current = parseFloat(project.dataset.offset || '0');
+        const blended = current + (targetOffset - current) * 0.15;
+
+        setProjectOffset(project, blended);
     });
 });
+
 
 
 
@@ -233,29 +274,50 @@ window.addEventListener('scroll', () => {
 
 let patternSketch = null;
 let patternStarted = false;
+
+// defaults (used if Sanity doc missing fields)
 let xPatternValue = 8;
 let yPatternValue = 8;
-let radiusX = 0.4;
-let radiusY = 0.35;
+let radiusX = 0.45;
+let radiusY = 0.43;
 
-// Add event listeners for the pattern controls
-document.getElementById("xPattern").addEventListener("input", (e) => {
-    xPatternValue = parseFloat(e.target.value);
-});
+// Load Index pattern settings from Sanity
+async function loadIndexSettingsFromSanity() {
+    const projectId  = 'hk21ncs5';      // same as above
+    const dataset    = 'production';    // change if needed
+    const apiVersion = '2023-05-03';
 
-document.getElementById("yPattern").addEventListener("input", (e) => {
-    yPatternValue = parseFloat(e.target.value);
-});
+    const query = `
+      *[_type == "indexSettings"][0]{
+        xPattern,
+        yPattern,
+        radiusX,
+        radiusY
+      }
+    `;
 
-document.getElementById("radiusX").addEventListener("input", (e) => {
-    radiusX = parseFloat(e.target.value);
-});
+    const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=${encodeURIComponent(query)}`;
 
-document.getElementById("radiusY").addEventListener("input", (e) => {
-    radiusY = parseFloat(e.target.value);
-});
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const settings = data.result;
 
-// click to activate
+        if (settings) {
+            if (typeof settings.xPattern === 'number') xPatternValue = settings.xPattern;
+            if (typeof settings.yPattern === 'number') yPatternValue = settings.yPattern;
+            if (typeof settings.radiusX === 'number') radiusX = settings.radiusX;
+            if (typeof settings.radiusY === 'number') radiusY = settings.radiusY;
+        }
+    } catch (err) {
+        console.error('Error loading index settings from Sanity:', err);
+    }
+}
+
+// call this somewhere near where you call loadProjectsFromSanity()
+loadIndexSettingsFromSanity();
+
+
 document.getElementById("Index").addEventListener("click", () => {
     if (patternStarted) return;
 
@@ -263,171 +325,90 @@ document.getElementById("Index").addEventListener("click", () => {
 
     const wrap = document.getElementById("pattern-wrapper");
     wrap.style.display = "block";
-    
+
     // Add class to nav to change text color to black
     document.getElementById("nav").classList.add("pattern-active");
 
-    // start p5 *now*, when wrapper is visible
     patternSketch = new p5((p) => {
 
+        // --------------------------
+        // STATE
+        // --------------------------
         let imgs = [];
-        let fullResImgs = []; // Store full resolution images
-        let txt = "NIC0LEWALKERINDEX";
+        let fullResImgs = [];
         let offset = 0;
         let mouseXPos = 0;
         let mouseYPos = 0;
-        let hoverScales = []; // Track scale for each image
-        let selectedImage = null; // Track clicked image
-        let loadingFullRes = false; // Track if loading full res image
+        let hoverScales = [];
+        let selectedImage = null;
+        let loadingFullRes = false;
+        let appearStartTimes = [];
 
-        // load small set of your images
-        const sources = [
-            "Selects/GUSTAFNILSON2.jpg",
-            "Selects/GUSTAFNILSON1.jpg",
-            "Selects/SCALED6.jpg",
-            "Selects/ULTRALOVE1.jpg",
-            "Selects/VN_KK2-1140x1536.jpg",
-            "Selects/VN_KK4-1536x1152.jpg",
-            "Selects/VN_KK5-1536x1183.jpg",
-            "Selects/VN_KK6-1124x1536.jpg",
-            "Selects/VN_Nuda_2-scaled.jpg",
-            "Selects/VN_Nuda_7-scaled.jpg",
-            "Selects/VN_Nuda_15-scaled.jpg",
-            "Selects/VN_Nuda_17-scaled.jpg",
-            "Selects/VN_Nuda_23-scaled.jpg",
-            "Selects/VN_Stars-4-768x1024.jpg",
-            "Selects/VN_Stars-12-768x1024.jpg",
-            "Selects/VN_Stars-20.jpg",
-            "Selects/VN_YL-Merch-22-Winter_Final_6-scaled.jpg",
-            "Selects/VNKIDS-2-1024x683.jpg",
-            "Selects/VNKIDS-7.jpg",
-            "Selects/VNKIDS-12-.jpg",
-            "Selects/xumYbS3Q.jpeg",
-            "Selects/YL5-scaled.jpeg",
-            "Selects/HODAKOVA23-1152x1536.jpeg",
-            "Selects/HODAKOVA29-1152x1536.jpeg",
-            "Selects/HODAKOVA31-1152x1536.jpeg",
-            "Selects/IMG_0761.jpg",
-            "Selects/INU1.jpg",
-            "Selects/INU2.jpg",
-            "Selects/INU3.jpg",
-            "Selects/INU4.jpg",
-            "Selects/NUDAPAPER.jpg",
-            "Selects/NW_ASB__0036.jpg",
-            "Selects/NW_ASB__0062.jpg",
-            "Selects/NW_ASB__0067.jpg",
-            "Selects/NW_ASB__0082.jpg",
-            "Selects/NW_ASB__0083.jpg",
-            "Selects/NW_ASB__0103.jpg",
-            "Selects/NW_ASB__0109.jpg",
-            "Selects/NW_ASB__0144.jpg",
-            "Selects/OFFICECOVER.jpg",
-            "Selects/OLLD_4047 copy.jpeg",
-            "Selects/OLLD_5028 copy.jpeg",
-            "Selects/OLLD_5255 copy.jpeg",
-            "Selects/OLLD_5260 copy.jpeg",
-            "Selects/OLLD.jpeg",
-            "Selects/032cHEELS4.jpg",
-            "Selects/032cHEELS5.webp",
-            "Selects/032cHEELS6.webp",
-            "Selects/032cHEELS7.jpg",
-            "Selects/032cHEELS8.webp",
-            "Selects/032cHEELS9.jpg",
-            "Selects/032cHEELS10.webp",
-            "Selects/032cHEELS11.webp",
-            "Selects/032cHEELS12.webp",
-            "Selects/032cHEELS13.webp",
-            "Selects/032cHEELS14.jpg",
-            "Selects/BLBA_1668_1-scaled.jpg",
-            "Selects/BLBA_1784-scaled.jpg",
-            "Selects/BLBA_2003-scaled.jpg",
-            "Selects/BLBA_2185-scaled.jpg",
-            "Selects/BLBALD.jpeg",
-            "Selects/BLBALD2.jpg",
-            "Selects/CARCYCOVER.jpg",
-            "Selects/EDIT1.jpg",
-            "Selects/GOODLUCK1.jpg",
-            "Selects/HEAT_SINGLES_06-07.jpg",
-            "Selects/HEAT_SINGLES_10-11.jpg"
-        ];
+        const sources = (window.patternSources && window.patternSources.length)
+            ? window.patternSources
+            : [];
 
-        
-        p.preload = () => {
-            // Load images at reduced size for pattern
-            sources.forEach(src => {
-                let im = p.loadImage(src, 
-                    (loadedImg) => {
-                        // Resize to max 200px for pattern display
-                        const maxDim = 200;
-                        if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
-                            const ratio = Math.min(maxDim / loadedImg.width, maxDim / loadedImg.height);
-                            loadedImg.resize(loadedImg.width * ratio, loadedImg.height * ratio);
-                        }
-                    },
-                    () => { console.log('Failed to load:', src); }
-                );
-                imgs.push(im);
-                fullResImgs.push(null); // Initialize as null
-            });
-        };
+        // --------------------------
+        // SETUP
+        // --------------------------
+p.setup = () => {
+    const w = wrap.offsetWidth;
+    const h = wrap.offsetHeight - 40;
+    p.createCanvas(w, h).parent(wrap);
+    p.frameRate(30);
+    p.pixelDensity(1);
 
-        p.setup = () => {
-            const w = wrap.offsetWidth;
-            const h = wrap.offsetHeight - 40;
-            p.createCanvas(w, h).parent(wrap);
-            p.frameRate(30);
-            p.pixelDensity(1); // Reduce pixel density for better performance
-            
-            // Initialize hover scales for each image
-            hoverScales = new Array(sources.length).fill(1.0);
-        };
-        
-        // Keyboard navigation
-        p.keyPressed = () => {
-            if (selectedImage === null) return;
-            
-            if (p.keyCode === p.LEFT_ARROW) {
-                // Go to previous image
-                selectedImage = (selectedImage - 1 + sources.length) % sources.length;
-                
-                // Load full resolution if not already loaded
-                if (fullResImgs[selectedImage] === null) {
-                    loadingFullRes = true;
-                    p.loadImage(sources[selectedImage], 
-                        (loadedImg) => {
-                            fullResImgs[selectedImage] = loadedImg;
-                            loadingFullRes = false;
-                        },
-                        () => {
-                            console.log('Failed to load full res:', sources[selectedImage]);
-                            loadingFullRes = false;
-                        }
-                    );
+    const n = sources.length;
+    imgs = new Array(n).fill(null);
+    fullResImgs = new Array(n).fill(null);
+    hoverScales = new Array(n).fill(1.0);
+    appearStartTimes = new Array(n).fill(null);
+
+    // ---- queued loading instead of all at once ----
+    let nextIndexToLoad = 0;
+    let currentlyLoading = 0;
+    const maxConcurrentLoads = 4; // tune if needed
+
+    function kickOffLoads() {
+        while (currentlyLoading < maxConcurrentLoads && nextIndexToLoad < n) {
+            const i = nextIndexToLoad++;
+            const srcObj = sources[i];
+            if (!srcObj || !srcObj.thumb) continue;
+            const thumbUrl = srcObj.thumb;
+
+            currentlyLoading++;
+
+            p.loadImage(
+                thumbUrl,
+                (loadedImg) => {
+                    const maxDim = 200;
+                    if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
+                        const ratio = Math.min(
+                            maxDim / loadedImg.width,
+                            maxDim / loadedImg.height
+                        );
+                        loadedImg.resize(
+                            loadedImg.width * ratio,
+                            loadedImg.height * ratio
+                        );
+                    }
+                    imgs[i] = loadedImg;
+                    appearStartTimes[i] = p.millis();
+                    currentlyLoading--;
+                    kickOffLoads();
+                },
+                () => {
+                    console.log("Failed to load thumb:", thumbUrl);
+                    currentlyLoading--;
+                    kickOffLoads();
                 }
-            } else if (p.keyCode === p.RIGHT_ARROW) {
-                // Go to next image
-                selectedImage = (selectedImage + 1) % sources.length;
-                
-                // Load full resolution if not already loaded
-                if (fullResImgs[selectedImage] === null) {
-                    loadingFullRes = true;
-                    p.loadImage(sources[selectedImage], 
-                        (loadedImg) => {
-                            fullResImgs[selectedImage] = loadedImg;
-                            loadingFullRes = false;
-                        },
-                        () => {
-                            console.log('Failed to load full res:', sources[selectedImage]);
-                            loadingFullRes = false;
-                        }
-                    );
-                }
-            } else if (p.keyCode === p.ESCAPE || p.key === 'Escape') {
-                // Close modal with Escape key
-                selectedImage = null;
-                loadingFullRes = false;
-            }
-        };
+            );
+        }
+    }
+
+    kickOffLoads();
+};
+
 
         p.windowResized = () => {
             const w = wrap.offsetWidth;
@@ -435,171 +416,210 @@ document.getElementById("Index").addEventListener("click", () => {
             p.resizeCanvas(w, h);
         };
 
-        // Track mouse position
+        // --------------------------
+        // INPUT
+        // --------------------------
         p.mouseMoved = () => {
             mouseXPos = p.mouseX;
             mouseYPos = p.mouseY;
         };
 
-        // Handle clicks
-        p.mouseClicked = () => {
-            // If modal is open, close it
-            if (selectedImage !== null) {
+p.mouseClicked = () => {
+    // close modal if open
+    if (selectedImage !== null) {
+        selectedImage = null;
+        loadingFullRes = false;
+        return;
+    }
+
+    // loop backwards so topmost image wins
+    for (let i = sources.length - 1; i >= 0; i--) {
+        const img = imgs[i];
+        if (!img) continue; // not loaded yet
+
+        const pos = i + offset;
+        const x =
+            p.width / 2 +
+            Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
+                (p.width * radiusX);
+        const y =
+            p.height / 2 +
+            Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
+                (p.height * radiusY);
+
+        // same base size logic as in draw()
+        const maxSize = 80;
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+        const baseW = img.width * ratio;
+        const baseH = img.height * ratio;
+
+        // same hover scale as in draw()
+        const hoverScale = hoverScales[i] || 1;
+        const appear = 1; // click only cares about final size, not fade
+        const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
+        const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
+
+        // --- tighter hit area: circle around center, smaller than the image ---
+        const dx = p.mouseX - x;
+        const dy = p.mouseY - y;
+        const radius = Math.min(w, h) * 0.4; // 0.4 = 40% of half-size → pretty tight
+
+        if (dx * dx + dy * dy <= radius * radius) {
+            // we actually clicked this image
+            selectedImage = i;
+
+if (!fullResImgs[i]) {
+    const srcObj = sources[i];
+    const fullUrl = srcObj && srcObj.full ? srcObj.full : (srcObj ? srcObj.thumb : null);
+    if (!fullUrl) continue;
+
+    loadingFullRes = true;
+    p.loadImage(
+        fullUrl,
+        (loadedImg) => {
+            fullResImgs[i] = loadedImg;
+            loadingFullRes = false;
+        },
+        () => {
+            console.log("Failed to load full:", fullUrl);
+            loadingFullRes = false;
+        }
+    );
+}
+
+            break; // only the topmost-hit image
+        }
+    }
+};
+
+
+        p.keyPressed = () => {
+            if (selectedImage === null) return;
+
+            if (p.keyCode === p.LEFT_ARROW) {
+                selectedImage = (selectedImage - 1 + sources.length) % sources.length;
+            } else if (p.keyCode === p.RIGHT_ARROW) {
+                selectedImage = (selectedImage + 1) % sources.length;
+            } else if (p.keyCode === p.ESCAPE) {
                 selectedImage = null;
                 loadingFullRes = false;
                 return;
             }
 
-            // Check if clicked on an image
-            for (let i = 0; i < imgs.length; i++) {   
-                let pos = i + offset;
-                let x = p.width / 2 + Math.cos(pos * xPatternValue * Math.PI / imgs.length) * (p.width * radiusX);
-                let y = p.height / 2 + Math.sin(pos * yPatternValue * Math.PI / imgs.length) * (p.height * radiusY);
-                
-                let img = imgs[i];
-                const maxSize = 130;
-                const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-                const w = img.width * ratio * hoverScales[i];
-                const h = img.height * ratio * hoverScales[i];
-                
-                // Check if click is within image bounds
-                if (p.mouseX > x - w/2 && p.mouseX < x + w/2 &&
-                    p.mouseY > y - h/2 && p.mouseY < y + h/2) {
-                    selectedImage = i;
-                    
-                    // Load full resolution if not already loaded
-                    if (fullResImgs[i] === null) {
-                        loadingFullRes = true;
-                        p.loadImage(sources[i], 
-                            (loadedImg) => {
-                                fullResImgs[i] = loadedImg;
-                                loadingFullRes = false;
-                            },
-                            () => {
-                                console.log('Failed to load full res:', sources[i]);
-                                loadingFullRes = false;
-                            }
-                        );
+            if (selectedImage !== null && !fullResImgs[selectedImage]) {
+                loadingFullRes = true;
+                p.loadImage(
+                    sources[selectedImage],
+                    (loadedImg) => {
+                        fullResImgs[selectedImage] = loadedImg;
+                        loadingFullRes = false;
+                    },
+                    () => {
+                        console.log("Failed to load full res:", sources[selectedImage]);
+                        loadingFullRes = false;
                     }
-                    break;
-                }
+                );
             }
         };
 
-        // In the p.draw() function, replace the hover logic section with this:
+        // --------------------------
+        // DRAW
+        // --------------------------
+        p.draw = () => {
+            p.background(255);
 
-p.draw = () => {
-    p.background(255);
-    
-    // Always animate pattern
-    offset += 0.01;
+            offset += 0.01;
 
-    // Draw all images in pattern
-    for (let i = 0; i < imgs.length; i++) {   
-        let pos = i + offset;
+            const now = p.millis();
+            let anyHovering = false;
 
-        let x = p.width / 2 + Math.cos(pos * xPatternValue * Math.PI / imgs.length) * (p.width * radiusX);
-        let y = p.height / 2 + Math.sin(pos * yPatternValue * Math.PI / imgs.length) * (p.height * radiusY);
+            for (let i = 0; i < sources.length; i++) {
+                const img = imgs[i];
+                if (!img) continue;
 
-        let img = imgs[i];
+                const pos = i + offset;
+                const x =
+                    p.width / 2 +
+                    Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
+                        (p.width * radiusX);
+                const y =
+                    p.height / 2 +
+                    Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
+                        (p.height * radiusY);
 
-        const maxSize = 80;
-        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-        
-        // Calculate image bounds
-        const baseW = img.width * ratio;
-        const baseH = img.height * ratio;
-        
-        // Check if mouse is hovering over this image
-        let isHovering = false;
-        if (selectedImage === null) {
-            isHovering = mouseXPos > x - baseW/2 && 
-                        mouseXPos < x + baseW/2 &&
-                        mouseYPos > y - baseH/2 && 
-                        mouseYPos < y + baseH/2;
-        }
-        
-        // Set target scale: 1.3 if hovering, 1.0 if not
-        let targetScale = isHovering ? 1.3 : 1.0;
-        
-        // Smooth animation towards target scale
-        hoverScales[i] += (targetScale - hoverScales[i]) * 0.5;
-        
-        const w = baseW * hoverScales[i];
-        const h = baseH * hoverScales[i];
+                const maxSize = 80;
+                const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+                const baseW = img.width * ratio;
+                const baseH = img.height * ratio;
 
-        // Change cursor to pointer when hovering
-        if (isHovering) {
-            p.cursor('pointer');
-        }
+                // appearance animation
+                let appear = 1;
+                const start = appearStartTimes[i];
+                if (start !== null) {
+                    const elapsed = now - start;
+                    const duration = 400;
+                    const t = Math.min(1, Math.max(0, elapsed / duration));
+                    appear = t * t * (3 - 2 * t);
+                    if (t >= 1) appearStartTimes[i] = null;
+                }
 
-        // No tinting - keep full opacity
-        p.noTint();
+                let isHovering =
+                    selectedImage === null &&
+                    mouseXPos > x - baseW / 2 &&
+                    mouseXPos < x + baseW / 2 &&
+                    mouseYPos > y - baseH / 2 &&
+                    mouseYPos < y + baseH / 2;
 
-        p.imageMode(p.CENTER);
-        p.image(img, x, y, w, h);
-    }
-    
-    // Reset cursor to default if not hovering any image
-    let anyHovering = false;
-    for (let i = 0; i < imgs.length; i++) {
-        let pos = i + offset;
-        let x = p.width / 2 + Math.cos(pos * xPatternValue * Math.PI / imgs.length) * (p.width * radiusX);
-        let y = p.height / 2 + Math.sin(pos * yPatternValue * Math.PI / imgs.length) * (p.height * radiusY);
-        let img = imgs[i];
-        const maxSize = 130;
-        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-        const baseW = img.width * ratio;
-        const baseH = img.height * ratio;
-        
-        if (selectedImage === null && 
-            mouseXPos > x - baseW/2 && mouseXPos < x + baseW/2 &&
-            mouseYPos > y - baseH/2 && mouseYPos < y + baseH/2) {
-            anyHovering = true;
-            break;
-        }
-    }
-    
-    if (!anyHovering && selectedImage === null) {
-        p.cursor('default');
-    }
-    
-    // Draw modal if an image is selected
-    if (selectedImage !== null) {
-        p.cursor('pointer'); // Show pointer in modal to indicate it's clickable
-        
-        // Calculate modal image size (same for both low-res and full-res)
-        let img = fullResImgs[selectedImage] || imgs[selectedImage];
-        let maxWidth = p.width * 0.9;
-        let maxHeight = p.height * 0.9;
-        let ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
-        let modalW = img.width * ratio;
-        let modalH = img.height * ratio;
-        
-        // Show loading state with blurred low-res preview
-        if (loadingFullRes || fullResImgs[selectedImage] === null) {
-            // Draw blurred low-res version at full modal size
-            p.drawingContext.filter = 'blur(8px)';
+                const hoverTargetScale = isHovering ? 1.3 : 1.0;
+                hoverScales[i] += (hoverTargetScale - hoverScales[i]) * 0.5;
+
+                const w = baseW * (0.8 + 0.2 * appear) * hoverScales[i];
+                const h = baseH * (0.8 + 0.2 * appear) * hoverScales[i];
+
+                if (isHovering) anyHovering = true;
+
+                p.tint(255, 255 * appear);
+                p.imageMode(p.CENTER);
+                p.image(img, x, y, w, h);
+            }
+
             p.noTint();
-            p.imageMode(p.CENTER);
-            p.image(imgs[selectedImage], p.width / 2, p.height / 2, modalW, modalH);
-            p.drawingContext.filter = 'none';
-            
-            // Loading text overlay
-            p.fill(0);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(20);
-            p.text('Loading...', p.width / 0, p.height / 0);
-        } else {
-            // Draw full resolution image (sharp)
-            p.noTint();
-            p.imageMode(p.CENTER);
-            p.image(fullResImgs[selectedImage], p.width / 2, p.height / 2, modalW, modalH);
-        }
-    }
-};
-        
-        
-        
+
+            // cursor feedback
+            p.cursor(anyHovering || selectedImage !== null ? "pointer" : "default");
+
+            // modal view
+            if (selectedImage !== null) {
+                const img =
+                    fullResImgs[selectedImage] || imgs[selectedImage] || null;
+
+                if (!img) {
+                    p.fill(0);
+                    p.textAlign(p.CENTER, p.CENTER);
+                    p.text("Loading image...", p.width / 2, p.height / 2);
+                    return;
+                }
+
+                const maxWidth = p.width * 0.9;
+                const maxHeight = p.height * 0.9;
+                const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+                const modalW = img.width * ratio;
+                const modalH = img.height * ratio;
+
+                if (loadingFullRes || !fullResImgs[selectedImage]) {
+                    p.drawingContext.filter = "blur(8px)";
+                    p.imageMode(p.CENTER);
+                    p.image(img, p.width / 2, p.height / 2, modalW, modalH);
+                    p.drawingContext.filter = "none";
+
+                    p.fill(0);
+                    p.textAlign(p.CENTER, p.CENTER);
+                    p.text("Loading...", p.width / 2, p.height / 2);
+                } else {
+                    p.imageMode(p.CENTER);
+                    p.image(fullResImgs[selectedImage], p.width / 2, p.height / 2, modalW, modalH);
+                }
+            }
+        };
     });
 });

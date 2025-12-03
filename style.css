@@ -84,36 +84,70 @@ body {
     background-color: black;
 }
 
+/* One shoot / project row */
 .project {
     position: relative;
     width: 100vw;
-    height: auto;
-    overflow: hidden;
+    height: auto;          /* we’ll set this from JS */
+    overflow-x: auto;      /* allow horizontal scroll */
+    overflow-y: hidden;
 }
 
-.project img,
-.project video {
-    position: absolute;
-    top: 0;
-    left: 0;
+/* Horizontal track that holds all images/videos */
+.project-track {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+}
+
+/* Each media cell */
+.project-item {
+    flex: 0 0 auto;        /* don’t shrink, don’t wrap */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* All media */
+.project-item img,
+.project-item video {
+    display: block;
+    height: 100%;          /* match project height */
+    width: auto;           /* width auto-adjusts */
+}
+
+/* First image: full viewport width, natural height.
+   This sets the project’s height. */
+.project-item:first-child img,
+.project-item:first-child video {
     width: 100vw;
     height: auto;
-    transform: translateX(100%);
-    transition: transform 1.6s ease-out;
 }
 
-.project img:first-child,
-.project video:first-child {
-    position: relative;
+
+/* All NON-first images:
+   - exactly match the row height
+   - width auto adjusts (can be wider than screen)
+   - no black bars top/bottom
+*/
+.project img:not(:first-child),
+.project video:not(:first-child) {
+    height: 100%;
+    object-fit: cover;    /* optional: you can drop this if you don't want any cropping */
+    object-position: center; /* or remove this line entirely */
 }
 
-.project .active {
-    transform: translateX(0);
-}
+/* You can keep .active / .passed for styling if you want,
+   but they no longer control transform */
 
-.project .alt.passed {
-    transform: translateX(-100%);
-}
+
+
+/* When manually scrubbing, disable the slide animation 
+.project.no-slide img,
+.project.no-slide video {
+    transition: none !important;
+}*/
+
 
 #index {
     cursor: pointer  !important;
@@ -194,6 +228,7 @@ a:hover {
     display: flex;
     flex-direction: row;
     gap: 20px;
-    position: fixed;
+
     padding-left: 0;
 }
+
