@@ -243,22 +243,45 @@ a:hover {
     padding-left: 0;
 }
 
-/* Mobile adjustments */
+#pattern-wrapper {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow: hidden;
+}
+
+/* MOBILE TYPOGRAPHY OVERRIDE */
 @media (max-width: 768px) {
-    body {
-        font-size: 12pt;
-    }
+  
+  html, body {
+    font-size: 16px !important;   /* forces readable base size */
+    line-height: 1.35;
+  }
 
-    #nav {
-        font-size: 12pt;
-        height: 8vh;
-    }
+  #nav {
+    font-size: 16px !important;
+    height: 60px !important;
+  }
 
-    #aboutcontact,
-    #Clients,
-    #InfoContent {
-        font-size: 12pt;
-    }
+  #nav p {
+    font-size: 16px !important;
+  }
+
+  #aboutcontact,
+  #Clients,
+  #InfoContent {
+    font-size: 15px !important;
+    line-height: 1.45;
+  }
+
+  #list {
+    font-size: 14px !important;
+    line-height: 1.45;
+  }
+
+  /* optional — spacing */
+  #InfoContent {
+    padding: 20px !important;
+  }
 }
 
 

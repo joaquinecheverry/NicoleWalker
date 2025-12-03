@@ -375,7 +375,7 @@ document.getElementById("Index").addEventListener("click", () => {
         // --------------------------
 p.setup = () => {
     const w = wrap.offsetWidth;
-    const h = wrap.offsetHeight - 40;
+    const h = wrap.clientHeight; 
     p.createCanvas(w, h).parent(wrap);
     p.frameRate(30);
     p.pixelDensity(1);
