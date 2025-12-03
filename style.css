@@ -151,16 +151,25 @@ body {
 #pattern-wrapper {
     display: none;          /* hidden until Index is clicked */
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;     
-    height: 100vh;         /* <-- this is key: fills entire viewport */
+    inset: 0;               /* top:0; right:0; bottom:0; left:0 */
     width: 100vw;
+    height: 100vh;          /* fallback for older browsers */
     background: #ffffff;
     z-index: 1500;
     overflow: hidden;
     box-sizing: border-box;
+}
+
+/* On iOS and modern browsers, use dynamic viewport height */
+@supports (height: 100dvh) {
+  #pattern-wrapper {
+    height: 100dvh;
+  }
+}
+
+/* Lock page scroll when Index is open */
+body.index-open {
+    overflow: hidden;
 }
 
 /* When Index is open, lock page scroll so home can't move underneath */
