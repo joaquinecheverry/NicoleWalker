@@ -148,22 +148,15 @@ body {
 }
 /* Full-screen Index overlay */
 #pattern-wrapper {
-    display: none;
+    display: none;          /* hidden until Index is clicked */
     position: fixed;
-    inset: 0;
+    inset: 0;               /* top:0; right:0; bottom:0; left:0 */
     width: 100vw;
-    height: 100vh;
     background: #ffffff;
     z-index: 1500;
     overflow: hidden;
     box-sizing: border-box;
-}
-
-/* Mobile-safe dynamic height */
-@supports (height: 100dvh) {
-  #pattern-wrapper {
-    height: 100dvh;
-  }
+    touch-action: none;     /* prevent touch scroll leaking to body on iOS */
 }
 
 /* When Index is open, lock page scroll so home can't move underneath */
@@ -276,11 +269,3 @@ a:hover {
     }
 }
 
-#pattern-wrapper canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: contain;
-}
