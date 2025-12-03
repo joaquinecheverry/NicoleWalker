@@ -258,18 +258,18 @@ a:hover {
   }
 
   #nav {
-    font-size: 16px !important;
-    height: 60px !important;
+    font-size: 12px !important;
+    height: 40px !important;
   }
 
   #nav p {
-    font-size: 16px !important;
+    font-size: 12px !important;
   }
 
   #aboutcontact,
   #Clients,
   #InfoContent {
-    font-size: 15px !important;
+    font-size: 12px !important;
     line-height: 1.45;
   }
 
