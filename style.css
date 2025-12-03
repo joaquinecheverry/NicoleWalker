@@ -1,5 +1,4 @@
 html {
-    height: 100vh;
     font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
     font-optical-sizing: auto;
     font-style: normal;
@@ -146,12 +145,32 @@ body {
 #index {
     cursor: pointer  !important;
 }
+/* Full-screen Index overlay */
 #pattern-wrapper {
-    padding-top: 20px;
-    padding-left: 10px;
-
+    display: none;          /* hidden until Index is clicked */
+    position: fixed;
+    inset: 0;               /* top:0; right:0; bottom:0; left:0 */
+    width: 100vw;
+    height: 100vh;
+    background: #ffffff;
+    z-index: 1500;
+    overflow: hidden;
     box-sizing: border-box;
 }
+
+/* On iOS and modern browsers, use dynamic viewport height
+   so Safari's bottom bar doesn't cut it off */
+@supports (height: 100dvh) {
+  #pattern-wrapper {
+    height: 100dvh;
+  }
+}
+
+/* Lock page scroll when Index is open */
+body.index-open {
+    overflow: hidden;
+}
+
 
 .label1 {
     top: 100px !important;

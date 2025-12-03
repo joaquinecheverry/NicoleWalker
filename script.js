@@ -11,6 +11,7 @@ document.getElementById("Title").addEventListener("click", () => {
     if (patternStarted) {
         const wrap = document.getElementById("pattern-wrapper");
         wrap.style.display = "none";
+        document.body.classList.remove("index-open");
         patternStarted = false;
         // Remove class from nav to restore white text
         document.getElementById("nav").classList.remove("pattern-active");
@@ -343,11 +344,12 @@ document.getElementById("Index").addEventListener("click", () => {
 
     patternStarted = true;
 
-    const wrap = document.getElementById("pattern-wrapper");
-    wrap.style.display = "block";
+const wrap = document.getElementById("pattern-wrapper");
+wrap.style.display = "block";
+document.body.classList.add("index-open");
 
-    // Add class to nav to change text color to black
-    document.getElementById("nav").classList.add("pattern-active");
+// Add class to nav to change text color to black
+document.getElementById("nav").classList.add("pattern-active");
 
     patternSketch = new p5((p) => {
 
@@ -373,7 +375,7 @@ document.getElementById("Index").addEventListener("click", () => {
         // --------------------------
 p.setup = () => {
     const w = wrap.offsetWidth;
-    const h = wrap.offsetHeight - 40;
+    const h = wrap.offsetHeight;
     p.createCanvas(w, h).parent(wrap);
     p.frameRate(30);
     p.pixelDensity(1);
@@ -432,7 +434,7 @@ p.setup = () => {
 
         p.windowResized = () => {
             const w = wrap.offsetWidth;
-            const h = wrap.offsetHeight - 40;
+            const h = wrap.offsetHeight;
             p.resizeCanvas(w, h);
         };
 
