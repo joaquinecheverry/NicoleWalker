@@ -106,15 +106,35 @@ function setProjectHeights() {
         );
         if (!firstMedia) return;
 
-        // Let the browser lay it out, then read its height
-        const rect = firstMedia.getBoundingClientRect();
-        const height = rect.height;
+        // reset to natural height first (important on resize)
+        projectEl.style.height = 'auto';
 
-        if (height > 0) {
-            projectEl.style.height = height + 'px';
+        const applyHeight = () => {
+            const rect = firstMedia.getBoundingClientRect();
+            if (rect.height > 0) {
+                projectEl.style.height = rect.height + 'px';
+            }
+        };
+
+        if (firstMedia.tagName === 'IMG') {
+            // if already loaded, we can measure right away
+            if (firstMedia.complete && firstMedia.naturalHeight) {
+                applyHeight();
+            } else {
+                // wait until the image has fully loaded
+                firstMedia.addEventListener('load', applyHeight, { once: true });
+            }
+        } else if (firstMedia.tagName === 'VIDEO') {
+            // video dimensions are ready after metadata is loaded
+            if (firstMedia.readyState >= 1 && firstMedia.videoHeight) {
+                applyHeight();
+            } else {
+                firstMedia.addEventListener('loadedmetadata', applyHeight, { once: true });
+            }
         }
     });
 }
+
 
 
 // -----------------------------

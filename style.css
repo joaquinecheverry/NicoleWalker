@@ -130,12 +130,6 @@ body {
    - width auto adjusts (can be wider than screen)
    - no black bars top/bottom
 */
-.project img:not(:first-child),
-.project video:not(:first-child) {
-    height: 100%;
-    object-fit: cover;    /* optional: you can drop this if you don't want any cropping */
-    object-position: center; /* or remove this line entirely */
-}
 
 /* You can keep .active / .passed for styling if you want,
    but they no longer control transform */
