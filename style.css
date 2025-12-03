@@ -1,8 +1,10 @@
 html {
+    height: 150vh;
     font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
     font-optical-sizing: auto;
     font-style: normal;
     overflow-x: hidden;
+
 }
 
 body {
