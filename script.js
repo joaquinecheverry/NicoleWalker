@@ -11,7 +11,16 @@ document.getElementById("Title").addEventListener("click", () => {
     if (patternStarted) {
         const wrap = document.getElementById("pattern-wrapper");
         wrap.style.display = "none";
+                // 🔓 UNLOCK SCROLL
+        document.documentElement.classList.remove("index-open");
         document.body.classList.remove("index-open");
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.left = "";
+        document.body.style.right = "";
+        document.body.style.width = "";
+        window.scrollTo(0, scrollYBeforeIndex);
+ 
         patternStarted = false;
         // Remove class from nav to restore white text
         document.getElementById("nav").classList.remove("pattern-active");
@@ -295,12 +304,14 @@ window.addEventListener('scroll', () => {
 
 let patternSketch = null;
 let patternStarted = false;
+let scrollYBeforeIndex = 0;   // NEW: remember scroll position
 
 // defaults (used if Sanity doc missing fields)
 let xPatternValue = 8;
 let yPatternValue = 8;
 let radiusX = 0.45;
 let radiusY = 0.43;
+
 
 // Load Index pattern settings from Sanity
 async function loadIndexSettingsFromSanity() {
@@ -346,8 +357,16 @@ document.getElementById("Index").addEventListener("click", () => {
 
 const wrap = document.getElementById("pattern-wrapper");
 wrap.style.display = "block";
-document.body.classList.add("index-open");
 
+
+scrollYBeforeIndex = window.scrollY || window.pageYOffset || 0;
+    document.documentElement.classList.add("index-open");
+    document.body.classList.add("index-open");
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollYBeforeIndex}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
 // Add class to nav to change text color to black
 document.getElementById("nav").classList.add("pattern-active");
 
