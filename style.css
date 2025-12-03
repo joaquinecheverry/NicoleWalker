@@ -148,15 +148,22 @@ body {
 }
 /* Full-screen Index overlay */
 #pattern-wrapper {
-    display: none;          /* hidden until Index is clicked */
+    display: none;
     position: fixed;
-    inset: 0;               /* top:0; right:0; bottom:0; left:0 */
+    inset: 0;
     width: 100vw;
+    height: 100vh;
     background: #ffffff;
     z-index: 1500;
     overflow: hidden;
     box-sizing: border-box;
-    touch-action: none;     /* prevent touch scroll leaking to body on iOS */
+}
+
+/* Mobile-safe dynamic height */
+@supports (height: 100dvh) {
+  #pattern-wrapper {
+    height: 100dvh;
+  }
 }
 
 /* When Index is open, lock page scroll so home can't move underneath */
@@ -241,3 +248,39 @@ a:hover {
     padding-left: 0;
 }
 
+/* --- MOBILE TYPE SCALE --- */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;      /* bigger base text on mobile */
+        line-height: 1.4;
+    }
+
+    #nav {
+        font-size: 14px;
+        height: 6.5vh;
+        /* slightly taller bar for thumb room */
+    }
+
+    #nav p {
+        font-size: 14px;
+        height: 6.5vh
+    }
+
+    /* Info panel + about/contact/clients list */
+    #InfoContent,
+    #aboutcontact,
+    #Clients,
+    #list {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+}
+
+#pattern-wrapper canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+}

@@ -566,42 +566,43 @@ if (!fullResImgs[i]) {
         // --------------------------
         // DRAW
         // --------------------------
-        p.draw = () => {
-                p.background(255);
+p.draw = () => {
+    p.background(255);
 
+    // keep canvas in sync with the wrapper (helps with iOS UI changes)
     if (p.width !== wrap.offsetWidth || p.height !== wrap.offsetHeight) {
         p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
     }
-            // Ensure canvas always matches wrapper height on iOS
-if (p.height !== wrap.offsetHeight) {
-    p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
-}
 
-            
+    offset += 0.01;
 
-            offset += 0.01;
+    const now = p.millis();
+    let anyHovering = false;
 
-            const now = p.millis();
-            let anyHovering = false;
+    // detect mobile vs desktop based on canvas width
+    const isMobile = p.width < 700;
+    const orbitScale = isMobile ? 0.9 : 1.0;   // slightly smaller ring on phones
+    const maxSizeBase = isMobile ? 45 : 80;     // slightly smaller thumbs on phones
 
-            for (let i = 0; i < sources.length; i++) {
-                const img = imgs[i];
-                if (!img) continue;
+    for (let i = 0; i < sources.length; i++) {
+        const img = imgs[i];
+        if (!img) continue;
 
-                const pos = i + offset;
-                const x =
-                    p.width / 2 +
-                    Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
-                        (p.width * radiusX);
-                const y =
-                    p.height / 2 +
-                    Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
-                        (p.height * radiusY);
+        const pos = i + offset;
+        const x =
+            p.width / 2 +
+            Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
+                (p.width * radiusX * orbitScale);
+        const y =
+            p.height / 2 +
+            Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
+                (p.height * radiusY * orbitScale);
 
-                const maxSize = 80;
-                const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-                const baseW = img.width * ratio;
-                const baseH = img.height * ratio;
+        // use size depending on device
+        const maxSize = maxSizeBase;
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+        const baseW = img.width * ratio;
+        const baseH = img.height * ratio;
 
                 // appearance animation
                 let appear = 1;
