@@ -198,8 +198,8 @@ function enableHorizontalScrollForProjects() {
 
 // 2. Fetch collections from Sanity
 async function loadProjectsFromSanity() {
-    const projectId  = 'hk21ncs5';  // from studio/sanity.config.ts
-    const dataset    = 'production';            // or your dataset name
+    const projectId  = 'hk21ncs5';
+    const dataset    = 'production';
     const apiVersion = '2023-05-03';
 
     const query = `
@@ -226,17 +226,24 @@ async function loadProjectsFromSanity() {
         const data = await res.json();
         const collections = data.result || [];
 
-        // Collect image URLs for the Index pattern view
-window.patternSources = collections
-  .flatMap(col => col.media || [])
-  .filter(item => item && item.type === 'image')   // only images
-  .map(item => ({
-    thumb: item.url + '?w=100&auto=format',   // lighter for Index orbit
-    full:  item.url + '?w=900&auto=format'  // sharp for zoom view
-  }))
-  .sort(() => 0.5 - Math.random())            // optional shuffle
-  .slice(0, 150);     
+        // 🔍 Detect mobile vs desktop
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
+        // 🔧 Different settings per device
+        const thumbWidth = isMobile ? 220 : 100;   // smaller on mobile for smooth motion
+        const fullWidth  = isMobile ? 1200 : 1600; // still sharp when zoomed
+        const maxCount   = isMobile ? 150 : 150;    // fewer images on mobile for performance
+
+        // Collect image URLs for the Index pattern view
+        window.patternSources = collections
+          .flatMap(col => col.media || [])
+          .filter(item => item && item.type === 'image')
+          .map(item => ({
+            thumb: `${item.url}?w=${thumbWidth}&auto=format&q=80`,
+            full:  `${item.url}?w=${fullWidth}&auto=format&q=90`
+          }))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, maxCount);
 
         // map into the format renderProjects expects
         const projects = collections.map(col => ({
@@ -249,6 +256,7 @@ window.patternSources = collections
         console.error('Error loading projects from Sanity:', err);
     }
 }
+
 
 // 3. Kick it off
 loadProjectsFromSanity();
