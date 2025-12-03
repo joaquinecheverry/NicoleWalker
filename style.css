@@ -1,11 +1,11 @@
 html {
-    height: 100vh;
-    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
+    /* remove fixed height, let it size naturally */
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     font-optical-sizing: auto;
     font-style: normal;
     overflow-x: hidden;
-
 }
+
 
 body {
     margin: 0;
@@ -34,6 +34,7 @@ body.index-open {
     overflow-y: hidden;
     position: fixed;
     z-index: 20020;
+
 }
 
 #nav.pattern-active {
@@ -89,6 +90,7 @@ body.index-open {
 #main-column {
     width: 100%;
     background-color: black;
+    
 }
 
 /* One shoot / project row */
@@ -154,20 +156,24 @@ body.index-open {
     cursor: pointer  !important;
 }
 /* Full-screen Index overlay */
+/* Full-screen Index overlay */
 #pattern-wrapper {
-    display: none;
+    display: none;          /* hidden until Index is clicked */
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;               /* top:0; right:0; bottom:0; left:0 */
     width: 100vw;
-    height: 100vh;
     background: #ffffff;
     z-index: 1500;
     overflow: hidden;
-
-    padding-top: 20px;
-    padding-left: 10px;
     box-sizing: border-box;
+}
+
+/* On modern browsers (including iOS Safari 16+), use dynamic viewport height */
+@supports (height: 100dvh) {
+    #pattern-wrapper {
+        height: 100dvh;
+        min-height: 100dvh;
+    }
 }
 
 
@@ -242,12 +248,6 @@ a:hover {
     gap: 20px;
 
     padding-left: 0;
-}
-
-#pattern-wrapper {
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    overflow: hidden;
 }
 
 /* MOBILE TYPOGRAPHY OVERRIDE */

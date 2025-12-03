@@ -433,10 +433,10 @@ p.setup = () => {
 
 
         p.windowResized = () => {
-            const w = wrap.offsetWidth;
-            const h = wrap.offsetHeight - 40;
-            p.resizeCanvas(w, h);
-        };
+    const w = wrap.offsetWidth;
+    const h = wrap.clientHeight;
+    p.resizeCanvas(w, h);
+};
 
         // --------------------------
         // INPUT
