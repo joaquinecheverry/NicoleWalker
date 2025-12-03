@@ -1,5 +1,4 @@
 html {
-    height: 100vh;
     font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
     font-optical-sizing: auto;
     font-style: normal;
@@ -155,7 +154,8 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;              /* <-- this is key: fills entire viewport */
+    bottom: 0;     
+    height: 100vh;         /* <-- this is key: fills entire viewport */
     width: 100vw;
     background: #ffffff;
     z-index: 1500;
@@ -254,4 +254,9 @@ a:hover {
     gap: 20px;
 
     padding-left: 0;
+}
+
+#pattern-wrapper canvas {
+    position: absolute;
+    top: 6.5vh;   /* match nav */
 }

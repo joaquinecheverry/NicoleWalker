@@ -548,6 +548,11 @@ if (!fullResImgs[i]) {
         // DRAW
         // --------------------------
         p.draw = () => {
+            // Ensure canvas always matches wrapper height on iOS
+if (p.height !== wrap.offsetHeight) {
+    p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
+}
+
             p.background(255);
 
             offset += 0.01;
