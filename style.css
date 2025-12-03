@@ -1,11 +1,10 @@
 html {
-    /* remove fixed height, let it size naturally */
-    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    height: 100vh;
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
     font-optical-sizing: auto;
     font-style: normal;
     overflow-x: hidden;
 }
-
 
 body {
     margin: 0;
@@ -13,12 +12,6 @@ body {
     font-size: 10pt;
 
 }
-
-/* When Index is open, lock page scroll */
-body.index-open {
-    overflow: hidden;
-}
-
 
 #nav {
     display: grid;
@@ -34,7 +27,6 @@ body.index-open {
     overflow-y: hidden;
     position: fixed;
     z-index: 20020;
-
 }
 
 #nav.pattern-active {
@@ -90,7 +82,6 @@ body.index-open {
 #main-column {
     width: 100%;
     background-color: black;
-    
 }
 
 /* One shoot / project row */
@@ -155,27 +146,12 @@ body.index-open {
 #index {
     cursor: pointer  !important;
 }
-/* Full-screen Index overlay */
-/* Full-screen Index overlay */
 #pattern-wrapper {
-    display: none;          /* hidden until Index is clicked */
-    position: fixed;
-    inset: 0;               /* top:0; right:0; bottom:0; left:0 */
-    width: 100vw;
-    background: #ffffff;
-    z-index: 1500;
-    overflow: hidden;
+    padding-top: 20px;
+    padding-left: 10px;
+
     box-sizing: border-box;
 }
-
-/* On modern browsers (including iOS Safari 16+), use dynamic viewport height */
-@supports (height: 100dvh) {
-    #pattern-wrapper {
-        height: 100dvh;
-        min-height: 100dvh;
-    }
-}
-
 
 .label1 {
     top: 100px !important;
@@ -249,40 +225,3 @@ a:hover {
 
     padding-left: 0;
 }
-
-/* MOBILE TYPOGRAPHY OVERRIDE */
-@media (max-width: 768px) {
-  
-  html, body {
-    font-size: 12px !important;   /* forces readable base size */
-    line-height: 1.35;
-  }
-
-  #nav {
-    font-size: 12px !important;
-    height: 40px !important;
-  }
-
-  #nav p {
-    font-size: 12px !important;
-  }
-
-  #aboutcontact,
-  #Clients,
-  #InfoContent {
-    font-size: 12px !important;
-    line-height: 1.45;
-  }
-
-  #list {
-    font-size: 12px !important;
-    line-height: 1.45;
-  }
-
-  /* optional — spacing */
-  #InfoContent {
-    padding: 20px !important;
-  }
-}
-
-
