@@ -12,6 +12,7 @@ document.getElementById("Title").addEventListener("click", () => {
         const wrap = document.getElementById("pattern-wrapper");
         wrap.style.display = "none";
         patternStarted = false;
+        document.body.classList.remove("index-open");
         // Remove class from nav to restore white text
         document.getElementById("nav").classList.remove("pattern-active");
         if (patternSketch) {
@@ -345,6 +346,7 @@ document.getElementById("Index").addEventListener("click", () => {
 
     const wrap = document.getElementById("pattern-wrapper");
     wrap.style.display = "block";
+    document.body.classList.add("index-open");
 
     // Add class to nav to change text color to black
     document.getElementById("nav").classList.add("pattern-active");
@@ -510,6 +512,12 @@ if (!fullResImgs[i]) {
             break; // only the topmost-hit image
         }
     }
+};
+
+// Make taps on mobile behave like clicks
+p.touchStarted = () => {
+    p.mouseClicked();
+    return false; // prevent default scrolling on tap
 };
 
 

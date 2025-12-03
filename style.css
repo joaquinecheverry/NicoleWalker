@@ -13,6 +13,12 @@ body {
 
 }
 
+/* When Index is open, lock page scroll */
+body.index-open {
+    overflow: hidden;
+}
+
+
 #nav {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;   
@@ -146,12 +152,23 @@ body {
 #index {
     cursor: pointer  !important;
 }
+/* Full-screen Index overlay */
 #pattern-wrapper {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #ffffff;
+    z-index: 1500;
+    overflow: hidden;
+
     padding-top: 20px;
     padding-left: 10px;
-
     box-sizing: border-box;
 }
+
 
 .label1 {
     top: 100px !important;
@@ -225,4 +242,23 @@ a:hover {
 
     padding-left: 0;
 }
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    body {
+        font-size: 12pt;
+    }
+
+    #nav {
+        font-size: 12pt;
+        height: 8vh;
+    }
+
+    #aboutcontact,
+    #Clients,
+    #InfoContent {
+        font-size: 12pt;
+    }
+}
+
 
