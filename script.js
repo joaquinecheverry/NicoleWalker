@@ -582,7 +582,8 @@ p.draw = () => {
         p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
     }
 
-    offset += 0.01;
+const isMobileCanvas = p.width < 768;
+offset += isMobileCanvas ? 0.007 : 0.01;
 
     const now = p.millis();
     let anyHovering = false;
@@ -590,7 +591,7 @@ p.draw = () => {
     // detect mobile vs desktop based on canvas width
     const isMobile = p.width < 700;
     const orbitScale = isMobile ? 0.9 : 1.0;   // slightly smaller ring on phones
-    const maxSizeBase = isMobile ? 45 : 80;     // slightly smaller thumbs on phones
+    const maxSizeBase = isMobile ? 30 : 80;     // slightly smaller thumbs on phones
 
     for (let i = 0; i < sources.length; i++) {
         const img = imgs[i];
