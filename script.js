@@ -71,32 +71,49 @@ function renderProjects(projects) {
         const track = document.createElement('div');
         track.classList.add('project-track');
 
-        project.media.forEach(item => {
-            const src = typeof item === 'string' ? item : item.url;
-            const type =
-                typeof item === 'string'
-                    ? (src.endsWith('.mp4') || src.endsWith('.webm') ? 'video' : 'image')
-                    : (item.type || 'image');
+const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-            const cell = document.createElement('div');
-            cell.classList.add('project-item');
+project.media.forEach(item => {
+    const rawSrc = typeof item === 'string' ? item : item.url;
+    const type =
+        typeof item === 'string'
+            ? (rawSrc.endsWith('.mp4') || rawSrc.endsWith('.webm') ? 'video' : 'image')
+            : (item.type || 'image');
 
-            let el;
-            if (type === 'video') {
-                el = document.createElement('video');
-                el.src = src;
-                el.autoplay = true;
-                el.loop = true;
-                el.muted = true;
-                el.playsInline = true;
-            } else {
-                el = document.createElement('img');
-                el.src = src;
-            }
+    const cell = document.createElement('div');
+    cell.classList.add('project-item');
 
-            cell.appendChild(el);
-            track.appendChild(cell);
-        });
+    let el;
+
+    if (type === 'video') {
+        el = document.createElement('video');
+        el.src = rawSrc;
+        el.loop = true;
+        el.muted = true;
+        el.playsInline = true;
+
+        // 🚫 don’t autoplay all videos on mobile
+        if (!isMobile) {
+            el.autoplay = true;
+        } else {
+            el.preload = 'metadata';
+        }
+    } else {
+        el = document.createElement('img');
+
+        // add Sanity transforms safely (works whether or not there's already a '?')
+        const sep = rawSrc.includes('?') ? '&' : '?';
+        const targetW = isMobile ? 900 : 1600;
+        const src = `${rawSrc}${sep}w=${targetW}&auto=format&q=80`;
+
+        el.src = src;
+        el.loading = 'lazy';   // 🔥 built-in lazy loading
+    }
+
+    cell.appendChild(el);
+    track.appendChild(cell);
+});
+
 
         projectEl.appendChild(track);
         main.appendChild(projectEl);
