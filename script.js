@@ -153,8 +153,7 @@ function setProjectHeights() {
         function applyHeightFromDimensions(w, h) {
             if (!w || !h) return;
             const ratio = h / w;
-            const targetHeight = viewportWidth * ratio; // height for 100vw
-            projectEl.style.height = targetHeight + 'px';
+projectEl.style.height = firstMedia.clientHeight + 'px';
         }
 
         if (firstMedia.tagName === 'IMG') {
