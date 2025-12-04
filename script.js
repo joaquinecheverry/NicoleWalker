@@ -129,6 +129,11 @@ project.media.forEach(item => {
 
     // After rendering, compute heights from natural dimensions
     setProjectHeights();
+    // After rendering media, wait a bit and recalc the heights
+setTimeout(() => {
+    setProjectHeights();
+}, 200);  // 200–300ms is the sweet spot for iOS Safari
+
 }
 
 
@@ -285,6 +290,10 @@ async function loadProjectsFromSanity() {
         }));
 
         renderProjects(projects);
+        // Failsafe for slow iOS image decoding
+setTimeout(() => {
+    setProjectHeights();
+}, 600);
     } catch (err) {
         console.error('Error loading projects from Sanity:', err);
     }
