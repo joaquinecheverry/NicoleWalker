@@ -241,31 +241,20 @@ a:hover {
     padding-left: 0;
 }
 
-/* --- MOBILE TYPE SCALE --- */
-@media (max-width: 768px) {
+/* Mobile typography WITHOUT using viewport meta */
+@media screen and (max-device-width: 768px) {
     body {
-        font-size: 14px;      /* bigger base text on mobile */
-        line-height: 1.4;
+        font-size: 14px !important;
+        line-height: 1.45;
     }
 
-    #nav {
-        font-size: 14px;
-        height: 6.5vh;
-        /* slightly taller bar for thumb room */
-    }
-
-    #nav p {
-        font-size: 14px;
-        height: 6.5vh
-    }
-
-    /* Info panel + about/contact/clients list */
+    #nav,
+    #nav p,
     #InfoContent,
     #aboutcontact,
     #Clients,
     #list {
-        font-size: 14px;
+        font-size: 14px !important;
         line-height: 1.5;
     }
 }
-
