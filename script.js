@@ -198,8 +198,8 @@ function enableHorizontalScrollForProjects() {
 
 // 2. Fetch collections from Sanity
 async function loadProjectsFromSanity() {
-    const projectId  = 'hk21ncs5';
-    const dataset    = 'production';
+    const projectId  = 'hk21ncs5';  // from studio/sanity.config.ts
+    const dataset    = 'production';            // or your dataset name
     const apiVersion = '2023-05-03';
 
     const query = `
@@ -226,24 +226,17 @@ async function loadProjectsFromSanity() {
         const data = await res.json();
         const collections = data.result || [];
 
-        // 🔍 Detect mobile vs desktop
-        const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
-        // 🔧 Different settings per device
-        const thumbWidth = isMobile ? 220 : 100;   // smaller on mobile for smooth motion
-        const fullWidth  = isMobile ? 1200 : 1600; // still sharp when zoomed
-        const maxCount   = isMobile ? 150 : 150;    // fewer images on mobile for performance
-
         // Collect image URLs for the Index pattern view
-        window.patternSources = collections
-          .flatMap(col => col.media || [])
-          .filter(item => item && item.type === 'image')
-          .map(item => ({
-            thumb: `${item.url}?w=${thumbWidth}&auto=format&q=80`,
-            full:  `${item.url}?w=${fullWidth}&auto=format&q=90`
-          }))
-          .sort(() => 0.5 - Math.random())
-          .slice(0, maxCount);
+window.patternSources = collections
+  .flatMap(col => col.media || [])
+  .filter(item => item && item.type === 'image')   // only images
+  .map(item => ({
+    thumb: item.url + '?w=100&auto=format',   // lighter for Index orbit
+    full:  item.url + '?w=900&auto=format'  // sharp for zoom view
+  }))
+  .sort(() => 0.5 - Math.random())            // optional shuffle
+  .slice(0, 150);     
+
 
         // map into the format renderProjects expects
         const projects = collections.map(col => ({
@@ -256,7 +249,6 @@ async function loadProjectsFromSanity() {
         console.error('Error loading projects from Sanity:', err);
     }
 }
-
 
 // 3. Kick it off
 loadProjectsFromSanity();
@@ -574,44 +566,42 @@ if (!fullResImgs[i]) {
         // --------------------------
         // DRAW
         // --------------------------
-p.draw = () => {
-    p.background(255);
+        p.draw = () => {
+                p.background(255);
 
-    // keep canvas in sync with the wrapper (helps with iOS UI changes)
     if (p.width !== wrap.offsetWidth || p.height !== wrap.offsetHeight) {
         p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
     }
+            // Ensure canvas always matches wrapper height on iOS
+if (p.height !== wrap.offsetHeight) {
+    p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
+}
 
-const isMobileCanvas = p.width < 768;
-offset += isMobileCanvas ? 0.007 : 0.01;
+            
 
-    const now = p.millis();
-    let anyHovering = false;
+            offset += 0.01;
 
-    // detect mobile vs desktop based on canvas width
-    const isMobile = p.width < 700;
-    const orbitScale = isMobile ? 0.9 : 1.0;   // slightly smaller ring on phones
-    const maxSizeBase = isMobile ? 30 : 80;     // slightly smaller thumbs on phones
+            const now = p.millis();
+            let anyHovering = false;
 
-    for (let i = 0; i < sources.length; i++) {
-        const img = imgs[i];
-        if (!img) continue;
+            for (let i = 0; i < sources.length; i++) {
+                const img = imgs[i];
+                if (!img) continue;
 
-        const pos = i + offset;
-        const x =
-            p.width / 2 +
-            Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
-                (p.width * radiusX * orbitScale);
-        const y =
-            p.height / 2 +
-            Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
-                (p.height * radiusY * orbitScale);
+                const pos = i + offset;
+                const x =
+                    p.width / 2 +
+                    Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
+                        (p.width * radiusX);
+                const y =
+                    p.height / 2 +
+                    Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
+                        (p.height * radiusY);
 
-        // use size depending on device
-        const maxSize = maxSizeBase;
-        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-        const baseW = img.width * ratio;
-        const baseH = img.height * ratio;
+                const maxSize = 80;
+                const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+                const baseW = img.width * ratio;
+                const baseH = img.height * ratio;
 
                 // appearance animation
                 let appear = 1;
