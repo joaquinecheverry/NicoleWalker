@@ -295,9 +295,4 @@ a:hover {
   }
 }
 
-/* When Index is open: force background white again */
-html.index-open,
-body.index-open {
-    background-color: #ffffff !important;
-}
 
