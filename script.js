@@ -139,7 +139,6 @@ setTimeout(() => {
 
 function setProjectHeights() {
     const projects = document.querySelectorAll('.project');
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
 
     projects.forEach(projectEl => {
         const firstMedia = projectEl.querySelector(
@@ -149,35 +148,59 @@ function setProjectHeights() {
 
         // reset first (important when resizing)
         projectEl.style.height = 'auto';
+        firstMedia.style.width = '';
+        firstMedia.style.height = '';
 
-        function applyHeightFromDimensions(w, h) {
-            if (!w || !h) return;
-            const ratio = h / w;
-projectEl.style.height = firstMedia.clientHeight + 'px';
+        function applyHeightFromDimensions(naturalW, naturalH) {
+            if (!naturalW || !naturalH) return;
+
+            // actual row width in pixels (this is what we care about)
+            const rowWidth =
+                projectEl.clientWidth ||
+                window.innerWidth ||
+                document.documentElement.clientWidth;
+
+            const ratio = naturalH / naturalW;
+            const targetHeight = Math.round(rowWidth * ratio); // exact px height
+
+            // 🔥 lock the row to this height
+            projectEl.style.height = targetHeight + 'px';
+
+            // 🔥 lock the first image to this SAME width/height
+            firstMedia.style.width = rowWidth + 'px';
+            firstMedia.style.height = targetHeight + 'px';
         }
 
         if (firstMedia.tagName === 'IMG') {
             if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
-                // already loaded (including from cache)
+                // image already loaded (cache etc.)
                 applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
             } else {
-                // wait until the image has fully loaded
-                firstMedia.addEventListener('load', () => {
-                    applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
-                }, { once: true });
+                firstMedia.addEventListener(
+                    'load',
+                    () => {
+                        applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
+                    },
+                    { once: true }
+                );
             }
         } else if (firstMedia.tagName === 'VIDEO') {
             const video = firstMedia;
             if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
                 applyHeightFromDimensions(video.videoWidth, video.videoHeight);
             } else {
-                video.addEventListener('loadedmetadata', () => {
-                    applyHeightFromDimensions(video.videoWidth, video.videoHeight);
-                }, { once: true });
+                video.addEventListener(
+                    'loadedmetadata',
+                    () => {
+                        applyHeightFromDimensions(video.videoWidth, video.videoHeight);
+                    },
+                    { once: true }
+                );
             }
         }
     });
 }
+
 
 window.addEventListener('resize', () => {
     setProjectHeights();

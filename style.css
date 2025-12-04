@@ -124,12 +124,12 @@ body {
     width: auto;     /* preserve aspect */
 }
 
-/* First image: full width, sets the height via JS */
+/* First image: full width, sets the height via JS 
 .project-item:first-child img,
 .project-item:first-child video {
     width: 100%;
     height: auto;
-}
+}*/
 
 
 
