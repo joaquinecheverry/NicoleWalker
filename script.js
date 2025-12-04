@@ -7,41 +7,57 @@ document.getElementById("InfoButton").addEventListener("click", () => {
     infoPanel.classList.toggle("active");
 });
 
-document.getElementById("Title").addEventListener("click", () => {
-    if (patternStarted) {
-        const wrap = document.getElementById("pattern-wrapper");
-        wrap.style.display = "none";
-        wrap.classList.remove("mobile-index");
-        wrap.innerHTML = "";
+function closeIndexView() {
+    const wrap = document.getElementById("pattern-wrapper");
 
-        document.documentElement.classList.remove("index-open");
-        document.body.classList.remove("index-open");
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.left = "";
-        document.body.style.right = "";
-        document.body.style.width = "";
+    // Hide overlay & clear mobile grid content
+    wrap.style.display = "none";
+    wrap.classList.remove("mobile-index");
+    wrap.innerHTML = "";
 
-        document.getElementById("nav").classList.remove("pattern-active");
+    // Unlock scroll + leave "index-open" mode (white bg)
+    document.documentElement.classList.remove("index-open");
+    document.body.classList.remove("index-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
 
-        if (patternSketch) {
-            patternSketch.remove();
-            patternSketch = null;
-        }
+    // Turn off nav "pattern" state
+    const nav = document.getElementById("nav");
+    if (nav) nav.classList.remove("pattern-active");
 
-        patternStarted = false;
+    // Kill p5 sketch if any (desktop index)
+    if (window.patternSketch) {
+        window.patternSketch.remove();
+        window.patternSketch = null;
     }
 
-    const infoPanel = document.getElementById("InfoContent");
-    infoPanel.classList.remove("active");
+    // Reset flag
+    window.patternStarted = false;
 
-    // recalc row heights after layout unlock
+    // Recompute row heights after layout is unlocked
     setTimeout(() => {
         setProjectHeights();
     }, 0);
+}
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+document.getElementById("Title").addEventListener("click", () => {
+    // Always force-close Index mode
+    closeIndexView();
+
+    // Close Info panel if open
+    const infoPanel = document.getElementById("InfoContent");
+    if (infoPanel) {
+        infoPanel.classList.remove("active");
+    }
+
+    // Scroll to top like a fresh page
+    window.scrollTo({ top: 0, behavior: "smooth" });
 });
+
 
 
 // -----------------------------
