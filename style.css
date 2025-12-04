@@ -263,3 +263,7 @@ a:hover {
         width: 200px;
     }
 }
+
+body.index-open {
+    background-color: white !important;
+}
