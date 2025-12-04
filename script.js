@@ -10,64 +10,75 @@ document.getElementById("InfoButton").addEventListener("click", () => {
 function closeIndexView() {
     const wrap = document.getElementById("pattern-wrapper");
 
-    if (wrap) {
-        // hide overlay and clear mobile grid
-        wrap.style.display = "none";
-        wrap.classList.remove("mobile-index");
-        wrap.innerHTML = "";
-    }
+    // Hide overlay & clear mobile grid content
+    wrap.style.display = "none";
+    wrap.classList.remove("mobile-index");
+    wrap.innerHTML = "";
 
-    // remove index-open (scroll lock)
+    // Unlock scroll + leave "index-open" mode (white bg)
     document.documentElement.classList.remove("index-open");
     document.body.classList.remove("index-open");
-
-    // 🔥 FORCE background back to black (inline style beats everything)
-    document.documentElement.style.backgroundColor = "#000000";
-    document.body.style.backgroundColor = "#000000";
-
-    // make sure body is not fixed in any weird way
     document.body.style.position = "";
     document.body.style.top = "";
     document.body.style.left = "";
     document.body.style.right = "";
     document.body.style.width = "";
 
-    // restore nav color
+    // Turn off nav "pattern" state
     const nav = document.getElementById("nav");
     if (nav) nav.classList.remove("pattern-active");
 
-    // kill p5 sketch if it exists
-    if (patternSketch) {
-        patternSketch.remove();
-        patternSketch = null;
+    // Kill p5 sketch if any (desktop index)
+    if (window.patternSketch) {
+        window.patternSketch.remove();
+        window.patternSketch = null;
     }
 
-    // mark pattern as closed so Index can open again
-    patternStarted = false;
+    // Reset flag
+    window.patternStarted = false;
 
-    // recalc gallery row heights after unlocking layout
+    // Recompute row heights after layout is unlocked
     setTimeout(() => {
         setProjectHeights();
     }, 0);
 }
 
 
-
-
 document.getElementById("Title").addEventListener("click", () => {
-    // always force-close Index mode (desktop or mobile)
-    closeIndexView();
+    if (patternStarted) {
+        const wrap = document.getElementById("pattern-wrapper");
+        wrap.style.display = "none";
+        wrap.classList.remove("mobile-index");
+        wrap.innerHTML = "";
 
-    // close Info panel
-    const infoPanel = document.getElementById("InfoContent");
-    if (infoPanel) {
-        infoPanel.classList.remove("active");
+        document.documentElement.classList.remove("index-open");
+        document.body.classList.remove("index-open");
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.left = "";
+        document.body.style.right = "";
+        document.body.style.width = "";
+
+        document.getElementById("nav").classList.remove("pattern-active");
+
+        if (patternSketch) {
+            patternSketch.remove();
+            patternSketch = null;
+        }
+
+        patternStarted = false;
     }
 
-    // scroll to top like fresh load
-    window.scrollTo({ top: 0, behavior: "smooth" });
-});
+    const infoPanel = document.getElementById("InfoContent");
+    infoPanel.classList.remove("active");
 
+    // recalc row heights after layout unlock
+    setTimeout(() => {
+        setProjectHeights();
+    }, 0);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 
 
 // -----------------------------
