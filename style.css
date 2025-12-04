@@ -267,4 +267,26 @@ a:hover {
     }
 }
 
+/* Mobile-only Index fallback: simple vertical grid instead of p5 orbit */
+@media (max-width: 768px) {
+  #pattern-wrapper.mobile-index {
+    display: block;
+    background: #ffffff;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .mobile-index-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .mobile-index-grid img {
+    width: 100vw;
+    height: auto;
+    display: block;
+  }
+}
+
 

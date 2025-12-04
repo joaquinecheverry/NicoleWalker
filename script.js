@@ -374,14 +374,13 @@ loadIndexSettingsFromSanity();
 
 document.getElementById("Index").addEventListener("click", () => {
     if (patternStarted) return;
-
     patternStarted = true;
 
-const wrap = document.getElementById("pattern-wrapper");
-wrap.style.display = "block";
+    const wrap = document.getElementById("pattern-wrapper");
+    const isMobile = window.innerWidth < 768;  // basic mobile check
 
-
-scrollYBeforeIndex = window.scrollY || window.pageYOffset || 0;
+    // remember scroll and lock
+    scrollYBeforeIndex = window.scrollY || window.pageYOffset || 0;
     document.documentElement.classList.add("index-open");
     document.body.classList.add("index-open");
     document.body.style.position = "fixed";
@@ -389,8 +388,51 @@ scrollYBeforeIndex = window.scrollY || window.pageYOffset || 0;
     document.body.style.left = "0";
     document.body.style.right = "0";
     document.body.style.width = "100%";
-// Add class to nav to change text color to black
-document.getElementById("nav").classList.add("pattern-active");
+
+    document.getElementById("nav").classList.add("pattern-active");
+
+    // -----------------------------
+    // ✅ MOBILE: SIMPLE GRID INDEX
+    // -----------------------------
+    if (isMobile) {
+        wrap.style.display = "block";
+        wrap.classList.add("mobile-index");
+
+        // build a simple vertical grid from patternSources
+        const sources = (window.patternSources && window.patternSources.length)
+            ? window.patternSources
+            : [];
+
+        // full-screen grid
+        const grid = document.createElement("div");
+        grid.className = "mobile-index-grid";
+
+        sources.forEach(srcObj => {
+            let url = null;
+
+            if (typeof srcObj === "string") {
+                url = srcObj;
+            } else if (srcObj) {
+                url = srcObj.full || srcObj.thumb || null;
+            }
+            if (!url) return;
+
+            const img = document.createElement("img");
+            img.src = url;
+            grid.appendChild(img);
+        });
+
+        wrap.innerHTML = "";
+        wrap.appendChild(grid);
+
+        // no p5 on mobile → return here
+        return;
+    }
+
+    // -----------------------------
+    // 💻 DESKTOP: ORIGINAL P5 ORBIT
+    // -----------------------------
+    wrap.style.display = "block";
 
     patternSketch = new p5((p) => {
 
@@ -414,64 +456,62 @@ document.getElementById("nav").classList.add("pattern-active");
         // --------------------------
         // SETUP
         // --------------------------
-p.setup = () => {
-    const w = wrap.offsetWidth;
-    const h = wrap.offsetHeight;
-    p.createCanvas(w, h).parent(wrap);
-    p.frameRate(30);
-    p.pixelDensity(1);
+        p.setup = () => {
+            const w = wrap.offsetWidth;
+            const h = wrap.offsetHeight;
+            p.createCanvas(w, h).parent(wrap);
+            p.frameRate(30);
+            p.pixelDensity(1);
 
-    const n = sources.length;
-    imgs = new Array(n).fill(null);
-    fullResImgs = new Array(n).fill(null);
-    hoverScales = new Array(n).fill(1.0);
-    appearStartTimes = new Array(n).fill(null);
+            const n = sources.length;
+            imgs = new Array(n).fill(null);
+            fullResImgs = new Array(n).fill(null);
+            hoverScales = new Array(n).fill(1.0);
+            appearStartTimes = new Array(n).fill(null);
 
-    // ---- queued loading instead of all at once ----
-    let nextIndexToLoad = 0;
-    let currentlyLoading = 0;
-    const maxConcurrentLoads = 4; // tune if needed
+            let nextIndexToLoad = 0;
+            let currentlyLoading = 0;
+            const maxConcurrentLoads = 4;
 
-    function kickOffLoads() {
-        while (currentlyLoading < maxConcurrentLoads && nextIndexToLoad < n) {
-            const i = nextIndexToLoad++;
-            const srcObj = sources[i];
-            if (!srcObj || !srcObj.thumb) continue;
-            const thumbUrl = srcObj.thumb;
+            function kickOffLoads() {
+                while (currentlyLoading < maxConcurrentLoads && nextIndexToLoad < n) {
+                    const i = nextIndexToLoad++;
+                    const srcObj = sources[i];
+                    if (!srcObj || !srcObj.thumb) continue;
+                    const thumbUrl = srcObj.thumb;
 
-            currentlyLoading++;
+                    currentlyLoading++;
 
-            p.loadImage(
-                thumbUrl,
-                (loadedImg) => {
-                    const maxDim = 200;
-                    if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
-                        const ratio = Math.min(
-                            maxDim / loadedImg.width,
-                            maxDim / loadedImg.height
-                        );
-                        loadedImg.resize(
-                            loadedImg.width * ratio,
-                            loadedImg.height * ratio
-                        );
-                    }
-                    imgs[i] = loadedImg;
-                    appearStartTimes[i] = p.millis();
-                    currentlyLoading--;
-                    kickOffLoads();
-                },
-                () => {
-                    console.log("Failed to load thumb:", thumbUrl);
-                    currentlyLoading--;
-                    kickOffLoads();
+                    p.loadImage(
+                        thumbUrl,
+                        (loadedImg) => {
+                            const maxDim = 200;
+                            if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
+                                const ratio = Math.min(
+                                    maxDim / loadedImg.width,
+                                    maxDim / loadedImg.height
+                                );
+                                loadedImg.resize(
+                                    loadedImg.width * ratio,
+                                    loadedImg.height * ratio
+                                );
+                            }
+                            imgs[i] = loadedImg;
+                            appearStartTimes[i] = p.millis();
+                            currentlyLoading--;
+                            kickOffLoads();
+                        },
+                        () => {
+                            console.log("Failed to load thumb:", thumbUrl);
+                            currentlyLoading--;
+                            kickOffLoads();
+                        }
+                    );
                 }
-            );
-        }
-    }
+            }
 
-    kickOffLoads();
-};
-
+            kickOffLoads();
+        };
 
         p.windowResized = () => {
             const w = wrap.offsetWidth;
@@ -487,74 +527,67 @@ p.setup = () => {
             mouseYPos = p.mouseY;
         };
 
-p.mouseClicked = () => {
-    // close modal if open
-    if (selectedImage !== null) {
-        selectedImage = null;
-        loadingFullRes = false;
-        return;
-    }
+        p.mouseClicked = () => {
+            if (selectedImage !== null) {
+                selectedImage = null;
+                loadingFullRes = false;
+                return;
+            }
 
-    // loop backwards so topmost image wins
-    for (let i = sources.length - 1; i >= 0; i--) {
-        const img = imgs[i];
-        if (!img) continue; // not loaded yet
+            for (let i = sources.length - 1; i >= 0; i--) {
+                const img = imgs[i];
+                if (!img) continue;
 
-        const pos = i + offset;
-        const x =
-            p.width / 2 +
-            Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
-                (p.width * radiusX);
-        const y =
-            p.height / 2 +
-            Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
-                (p.height * radiusY);
+                const pos = i + offset;
+                const x =
+                    p.width / 2 +
+                    Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
+                        (p.width * radiusX);
+                const y =
+                    p.height / 2 +
+                    Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
+                        (p.height * radiusY);
 
-        // same base size logic as in draw()
-        const maxSize = 80;
-        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-        const baseW = img.width * ratio;
-        const baseH = img.height * ratio;
+                const maxSize = 80;
+                const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+                const baseW = img.width * ratio;
+                const baseH = img.height * ratio;
 
-        // same hover scale as in draw()
-        const hoverScale = hoverScales[i] || 1;
-        const appear = 1; // click only cares about final size, not fade
-        const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
-        const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
+                const hoverScale = hoverScales[i] || 1;
+                const appear = 1;
+                const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
+                const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
 
-        // --- tighter hit area: circle around center, smaller than the image ---
-        const dx = p.mouseX - x;
-        const dy = p.mouseY - y;
-        const radius = Math.min(w, h) * 0.4; // 0.4 = 40% of half-size → pretty tight
+                const dx = p.mouseX - x;
+                const dy = p.mouseY - y;
+                const radius = Math.min(w, h) * 0.4;
 
-        if (dx * dx + dy * dy <= radius * radius) {
-            // we actually clicked this image
-            selectedImage = i;
+                if (dx * dx + dy * dy <= radius * radius) {
+                    selectedImage = i;
 
-if (!fullResImgs[i]) {
-    const srcObj = sources[i];
-    const fullUrl = srcObj && srcObj.full ? srcObj.full : (srcObj ? srcObj.thumb : null);
-    if (!fullUrl) continue;
+                    if (!fullResImgs[i]) {
+                        const srcObj = sources[i];
+                        const fullUrl = srcObj && srcObj.full ? srcObj.full : (srcObj ? srcObj.thumb : null);
+                        if (!fullUrl) continue;
 
-    loadingFullRes = true;
-    p.loadImage(
-        fullUrl,
-        (loadedImg) => {
-            fullResImgs[i] = loadedImg;
-            loadingFullRes = false;
-        },
-        () => {
-            console.log("Failed to load full:", fullUrl);
-            loadingFullRes = false;
-        }
-    );
-}
+                        loadingFullRes = true;
+                        p.loadImage(
+                            fullUrl,
+                            (loadedImg) => {
+                                fullResImgs[i] = loadedImg;
+                                loadingFullRes = false;
+                            },
+                            () => {
+                                console.log("Failed to load full:", fullUrl);
+                                loadingFullRes = false;
+                            }
+                        );
+                    }
 
-            break; // only the topmost-hit image
-        }
-    }
-};
-
+                    break;
+                }
+            }
+        };
 
         p.keyPressed = () => {
             if (selectedImage === null) return;
@@ -571,14 +604,18 @@ if (!fullResImgs[i]) {
 
             if (selectedImage !== null && !fullResImgs[selectedImage]) {
                 loadingFullRes = true;
+                const srcObj = sources[selectedImage];
+                const fullUrl = srcObj && srcObj.full ? srcObj.full : (srcObj ? srcObj.thumb : null);
+                if (!fullUrl) return;
+
                 p.loadImage(
-                    sources[selectedImage],
+                    fullUrl,
                     (loadedImg) => {
                         fullResImgs[selectedImage] = loadedImg;
                         loadingFullRes = false;
                     },
                     () => {
-                        console.log("Failed to load full res:", sources[selectedImage]);
+                        console.log("Failed to load full res:", fullUrl);
                         loadingFullRes = false;
                     }
                 );
@@ -588,46 +625,42 @@ if (!fullResImgs[i]) {
         // --------------------------
         // DRAW
         // --------------------------
-p.draw = () => {
-    p.background(255);
+        p.draw = () => {
+            p.background(255);
 
-    // keep canvas in sync with the wrapper (helps with iOS UI changes)
-    if (p.width !== wrap.offsetWidth || p.height !== wrap.offsetHeight) {
-        p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
-    }
+            if (p.width !== wrap.offsetWidth || p.height !== wrap.offsetHeight) {
+                p.resizeCanvas(wrap.offsetWidth, wrap.offsetHeight);
+            }
 
-const isMobileCanvas = p.width < 768;
-offset += isMobileCanvas ? 0.007 : 0.01;
+            const isMobileCanvas = p.width < 768;
+            offset += isMobileCanvas ? 0.007 : 0.01;
 
-    const now = p.millis();
-    let anyHovering = false;
+            const now = p.millis();
+            let anyHovering = false;
 
-    // detect mobile vs desktop based on canvas width
-    const isMobile = p.width < 700;
-    const orbitScale = isMobile ? 0.9 : 1.0;   // slightly smaller ring on phones
-    const maxSizeBase = isMobile ? 30 : 80;     // slightly smaller thumbs on phones
+            const isMobile = p.width < 700;
+            const orbitScale = isMobile ? 0.9 : 1.0;
+            const maxSizeBase = isMobile ? 30 : 80;
 
-    for (let i = 0; i < sources.length; i++) {
-        const img = imgs[i];
-        if (!img) continue;
+            for (let i = 0; i < sources.length; i++) {
+                const img = imgs[i];
+                if (!img) continue;
 
-        const pos = i + offset;
-        const x =
-            p.width / 2 +
-            Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
-                (p.width * radiusX * orbitScale);
-        const y =
-            p.height / 2 +
-            Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
-                (p.height * radiusY * orbitScale);
+                const pos = i + offset;
+                const x =
+                    p.width / 2 +
+                    Math.cos((pos * xPatternValue * Math.PI) / sources.length) *
+                        (p.width * radiusX * orbitScale);
+                const y =
+                    p.height / 2 +
+                    Math.sin((pos * yPatternValue * Math.PI) / sources.length) *
+                        (p.height * radiusY * orbitScale);
 
-        // use size depending on device
-        const maxSize = maxSizeBase;
-        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-        const baseW = img.width * ratio;
-        const baseH = img.height * ratio;
+                const maxSize = maxSizeBase;
+                const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+                const baseW = img.width * ratio;
+                const baseH = img.height * ratio;
 
-                // appearance animation
                 let appear = 1;
                 const start = appearStartTimes[i];
                 if (start !== null) {
@@ -638,20 +671,20 @@ offset += isMobileCanvas ? 0.007 : 0.01;
                     if (t >= 1) appearStartTimes[i] = null;
                 }
 
-                let isHovering =
+                let isHoveringNow =
                     selectedImage === null &&
                     mouseXPos > x - baseW / 2 &&
                     mouseXPos < x + baseW / 2 &&
                     mouseYPos > y - baseH / 2 &&
                     mouseYPos < y + baseH / 2;
 
-                const hoverTargetScale = isHovering ? 1.3 : 1.0;
+                const hoverTargetScale = isHoveringNow ? 1.3 : 1.0;
                 hoverScales[i] += (hoverTargetScale - hoverScales[i]) * 0.5;
 
                 const w = baseW * (0.8 + 0.2 * appear) * hoverScales[i];
                 const h = baseH * (0.8 + 0.2 * appear) * hoverScales[i];
 
-                if (isHovering) anyHovering = true;
+                if (isHoveringNow) anyHovering = true;
 
                 p.tint(255, 255 * appear);
                 p.imageMode(p.CENTER);
@@ -659,14 +692,10 @@ offset += isMobileCanvas ? 0.007 : 0.01;
             }
 
             p.noTint();
-
-            // cursor feedback
             p.cursor(anyHovering || selectedImage !== null ? "pointer" : "default");
 
-            // modal view
             if (selectedImage !== null) {
-                const img =
-                    fullResImgs[selectedImage] || imgs[selectedImage] || null;
+                const img = fullResImgs[selectedImage] || imgs[selectedImage] || null;
 
                 if (!img) {
                     p.fill(0);
