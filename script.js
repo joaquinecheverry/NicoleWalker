@@ -8,37 +8,44 @@ document.getElementById("InfoButton").addEventListener("click", () => {
 });
 
 document.getElementById("Title").addEventListener("click", () => {
-    if (patternStarted) {
-        const wrap = document.getElementById("pattern-wrapper");
-        wrap.style.display = "none";
-                //  UNLOCK SCROLL
-        document.documentElement.classList.remove("index-open");
-        document.body.classList.remove("index-open");
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.left = "";
-        document.body.style.right = "";
-        document.body.style.width = "";
-        window.scrollTo(0, scrollYBeforeIndex);
- 
-        patternStarted = false;
-        // Remove class from nav to restore white text
-        document.getElementById("nav").classList.remove("pattern-active");
-        if (patternSketch) {
-            patternSketch.remove();
-            patternSketch = null;
-        }
+    const wrap = document.getElementById("pattern-wrapper");
+
+    // ✅ Always close Index state (desktop & mobile)
+    wrap.style.display = "none";
+    wrap.classList.remove("mobile-index");
+    wrap.innerHTML = ""; // clear mobile grid if any
+
+    document.documentElement.classList.remove("index-open");
+    document.body.classList.remove("index-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+
+    // turn off nav “pattern-active” state
+    document.getElementById("nav").classList.remove("pattern-active");
+
+    // kill p5 sketch if it exists (desktop index)
+    if (patternSketch) {
+        patternSketch.remove();
+        patternSketch = null;
     }
-    
+    patternStarted = false;
 
-
+    // close Info panel if open
     const infoPanel = document.getElementById("InfoContent");
     if (infoPanel.classList.contains("active")) {
         infoPanel.classList.remove("active");
     }
-    
+
+    // scroll to top like a fresh load
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 🔥 recalc row heights after layout changes
+    setTimeout(setProjectHeights, 50);
 });
+
 
 // -----------------------------
 // LOAD PROJECTS FROM SANITY
