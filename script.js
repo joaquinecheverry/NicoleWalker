@@ -100,11 +100,20 @@ function renderProjects(projects) {
 
         projectEl.appendChild(track);
         main.appendChild(projectEl);
+
+        // NEW: if this shoot only has one media item, disable horizontal scroll
+        const mediaCount = project.media.length || 0;
+        if (mediaCount <= 1) {
+            projectEl.style.overflowX = 'hidden';
+        } else {
+            projectEl.style.overflowX = 'auto';
+        }
     });
 
     // After rendering, compute heights from natural dimensions
     setProjectHeights();
 }
+
 
 function setProjectHeights() {
     const projects = document.querySelectorAll('.project');
