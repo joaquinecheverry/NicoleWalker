@@ -10,12 +10,14 @@ document.getElementById("InfoButton").addEventListener("click", () => {
 function closeIndexView() {
     const wrap = document.getElementById("pattern-wrapper");
 
-    // Hide overlay & clear mobile grid content
-    wrap.style.display = "none";
-    wrap.classList.remove("mobile-index");
-    wrap.innerHTML = "";
+    if (wrap) {
+        // hide overlay and clear mobile grid
+        wrap.style.display = "none";
+        wrap.classList.remove("mobile-index");
+        wrap.innerHTML = "";
+    }
 
-    // Unlock scroll + leave "index-open" mode (white bg)
+    // remove index-open (white bg + scroll lock)
     document.documentElement.classList.remove("index-open");
     document.body.classList.remove("index-open");
     document.body.style.position = "";
@@ -24,37 +26,38 @@ function closeIndexView() {
     document.body.style.right = "";
     document.body.style.width = "";
 
-    // Turn off nav "pattern" state
+    // restore nav color
     const nav = document.getElementById("nav");
     if (nav) nav.classList.remove("pattern-active");
 
-    // Kill p5 sketch if any (desktop index)
-    if (window.patternSketch) {
-        window.patternSketch.remove();
-        window.patternSketch = null;
+    // kill p5 sketch if it exists
+    if (patternSketch) {
+        patternSketch.remove();
+        patternSketch = null;
     }
 
-    // Reset flag
-    window.patternStarted = false;
+    // mark pattern as closed so Index can open again
+    patternStarted = false;
 
-    // Recompute row heights after layout is unlocked
+    // recalc gallery row heights after unlocking layout
     setTimeout(() => {
         setProjectHeights();
     }, 0);
 }
 
 
+
 document.getElementById("Title").addEventListener("click", () => {
-    // Always force-close Index mode
+    // always force-close Index mode (desktop or mobile)
     closeIndexView();
 
-    // Close Info panel if open
+    // close Info panel
     const infoPanel = document.getElementById("InfoContent");
     if (infoPanel) {
         infoPanel.classList.remove("active");
     }
 
-    // Scroll to top like a fresh page
+    // scroll to top like fresh load
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
