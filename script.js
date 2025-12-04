@@ -45,40 +45,19 @@ function closeIndexView() {
 
 
 document.getElementById("Title").addEventListener("click", () => {
-    if (patternStarted) {
-        const wrap = document.getElementById("pattern-wrapper");
-        wrap.style.display = "none";
-        wrap.classList.remove("mobile-index");
-        wrap.innerHTML = "";
+    // Always force-close Index mode
+    closeIndexView();
 
-        document.documentElement.classList.remove("index-open");
-        document.body.classList.remove("index-open");
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.left = "";
-        document.body.style.right = "";
-        document.body.style.width = "";
-
-        document.getElementById("nav").classList.remove("pattern-active");
-
-        if (patternSketch) {
-            patternSketch.remove();
-            patternSketch = null;
-        }
-
-        patternStarted = false;
+    // Close Info panel if open
+    const infoPanel = document.getElementById("InfoContent");
+    if (infoPanel) {
+        infoPanel.classList.remove("active");
     }
 
-    const infoPanel = document.getElementById("InfoContent");
-    infoPanel.classList.remove("active");
-
-    // recalc row heights after layout unlock
-    setTimeout(() => {
-        setProjectHeights();
-    }, 0);
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll to top like a fresh page
+    window.scrollTo({ top: 0, behavior: "smooth" });
 });
+
 
 
 // -----------------------------
