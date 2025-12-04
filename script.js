@@ -1,3 +1,6 @@
+
+
+
 // Add to your script.js file
 document.getElementById("InfoButton").addEventListener("click", () => {
     const infoPanel = document.getElementById("InfoContent");
@@ -14,15 +17,9 @@ function closeIndexView() {
         wrap.innerHTML = "";
     }
 
-    // remove index-open (scroll lock)
+    // remove index-open (white bg + scroll lock)
     document.documentElement.classList.remove("index-open");
     document.body.classList.remove("index-open");
-
-    // 🔥 FORCE background back to black (inline style beats everything)
-    document.documentElement.style.backgroundColor = "#000000";
-    document.body.style.backgroundColor = "#000000";
-
-    // make sure body is not fixed in any weird way
     document.body.style.position = "";
     document.body.style.top = "";
     document.body.style.left = "";
@@ -50,7 +47,6 @@ function closeIndexView() {
 
 
 
-
 document.getElementById("Title").addEventListener("click", () => {
     // always force-close Index mode (desktop or mobile)
     closeIndexView();
@@ -64,7 +60,6 @@ document.getElementById("Title").addEventListener("click", () => {
     // scroll to top like fresh load
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
-
 
 
 
@@ -457,20 +452,17 @@ document.getElementById("Index").addEventListener("click", () => {
     const wrap = document.getElementById("pattern-wrapper");
     const isMobile = window.innerWidth < 768;  // basic mobile check
 
-    // remember scroll (in case you want it later)
+    // remember scroll and lock
     scrollYBeforeIndex = window.scrollY || window.pageYOffset || 0;
-
-    // 🔒 lock scroll via class only (no body position:fixed)
     document.documentElement.classList.add("index-open");
     document.body.classList.add("index-open");
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollYBeforeIndex}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
 
-    // 🔥 FORCE background to white while Index is open
-    document.documentElement.style.backgroundColor = "#ffffff";
-    document.body.style.backgroundColor = "#ffffff";
-
-    // nav should always be visible and black text on white
-    const nav = document.getElementById("nav");
-    if (nav) nav.classList.add("pattern-active");
+    document.getElementById("nav").classList.add("pattern-active");
 
     // -----------------------------
     // ✅ MOBILE: SIMPLE GRID INDEX
@@ -479,10 +471,12 @@ document.getElementById("Index").addEventListener("click", () => {
         wrap.style.display = "block";
         wrap.classList.add("mobile-index");
 
+        // build a simple vertical grid from patternSources
         const sources = (window.patternSources && window.patternSources.length)
             ? window.patternSources
             : [];
 
+        // full-screen grid
         const grid = document.createElement("div");
         grid.className = "mobile-index-grid";
 
