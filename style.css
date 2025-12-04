@@ -8,7 +8,7 @@ html {
 
 body {
     margin: 0;
-    background-color: rgb(255, 255, 255);
+    
     background-color: #000;
     font-size: 10pt;
 
@@ -295,4 +295,9 @@ a:hover {
   }
 }
 
+/* When Index is open: force background white again */
+html.index-open,
+body.index-open {
+    background-color: #ffffff !important;
+}
 
