@@ -10,53 +10,64 @@ document.getElementById("InfoButton").addEventListener("click", () => {
 function closeIndexView() {
     const wrap = document.getElementById("pattern-wrapper");
 
-    // Hide overlay & clear mobile grid content
-    wrap.style.display = "none";
-    wrap.classList.remove("mobile-index");
-    wrap.innerHTML = "";
+    if (wrap) {
+        // hide overlay and clear mobile grid
+        wrap.style.display = "none";
+        wrap.classList.remove("mobile-index");
+        wrap.innerHTML = "";
+    }
 
-    // Unlock scroll + leave "index-open" mode (white bg)
+    // remove index-open (scroll lock)
     document.documentElement.classList.remove("index-open");
     document.body.classList.remove("index-open");
+
+    // 🔥 FORCE background back to black (inline style beats everything)
+    document.documentElement.style.backgroundColor = "#000000";
+    document.body.style.backgroundColor = "#000000";
+
+    // make sure body is not fixed in any weird way
     document.body.style.position = "";
     document.body.style.top = "";
     document.body.style.left = "";
     document.body.style.right = "";
     document.body.style.width = "";
 
-    // Turn off nav "pattern" state
+    // restore nav color
     const nav = document.getElementById("nav");
     if (nav) nav.classList.remove("pattern-active");
 
-    // Kill p5 sketch if any (desktop index)
-    if (window.patternSketch) {
-        window.patternSketch.remove();
-        window.patternSketch = null;
+    // kill p5 sketch if it exists
+    if (patternSketch) {
+        patternSketch.remove();
+        patternSketch = null;
     }
 
-    // Reset flag
-    window.patternStarted = false;
+    // mark pattern as closed so Index can open again
+    patternStarted = false;
 
-    // Recompute row heights after layout is unlocked
+    // recalc gallery row heights after unlocking layout
     setTimeout(() => {
         setProjectHeights();
     }, 0);
 }
 
 
+
+
 document.getElementById("Title").addEventListener("click", () => {
-    // Always force-close Index mode
+    // always force-close Index mode (desktop or mobile)
     closeIndexView();
 
-    // Close Info panel if open
+    // close Info panel
     const infoPanel = document.getElementById("InfoContent");
     if (infoPanel) {
         infoPanel.classList.remove("active");
     }
 
-    // Scroll to top like a fresh page
+    // scroll to top like fresh load
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
+
 
 
 
@@ -449,17 +460,20 @@ document.getElementById("Index").addEventListener("click", () => {
     const wrap = document.getElementById("pattern-wrapper");
     const isMobile = window.innerWidth < 768;  // basic mobile check
 
-    // remember scroll and lock
+    // remember scroll (in case you want it later)
     scrollYBeforeIndex = window.scrollY || window.pageYOffset || 0;
+
+    // 🔒 lock scroll via class only (no body position:fixed)
     document.documentElement.classList.add("index-open");
     document.body.classList.add("index-open");
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollYBeforeIndex}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
 
-    document.getElementById("nav").classList.add("pattern-active");
+    // 🔥 FORCE background to white while Index is open
+    document.documentElement.style.backgroundColor = "#ffffff";
+    document.body.style.backgroundColor = "#ffffff";
+
+    // nav should always be visible and black text on white
+    const nav = document.getElementById("nav");
+    if (nav) nav.classList.add("pattern-active");
 
     // -----------------------------
     // ✅ MOBILE: SIMPLE GRID INDEX
@@ -468,12 +482,10 @@ document.getElementById("Index").addEventListener("click", () => {
         wrap.style.display = "block";
         wrap.classList.add("mobile-index");
 
-        // build a simple vertical grid from patternSources
         const sources = (window.patternSources && window.patternSources.length)
             ? window.patternSources
             : [];
 
-        // full-screen grid
         const grid = document.createElement("div");
         grid.className = "mobile-index-grid";
 
