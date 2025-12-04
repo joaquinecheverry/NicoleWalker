@@ -88,7 +88,7 @@ body {
 .project {
     position: relative;
     width: 100vw;
-    height: auto;          /* we’ll set this from JS */
+    height: auto;          /* JS will set fixed height */
     overflow-x: auto;      /* allow horizontal scroll */
     overflow-y: hidden;
 }
@@ -106,18 +106,19 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100%;          /* fill the row height */
 }
 
 /* All media */
 .project-item img,
 .project-item video {
     display: block;
-    height: 100%;          /* match project height */
+    height: 100%;          /* match project row height */
     width: auto;           /* width auto-adjusts */
 }
 
-/* First image: full viewport width, natural height.
-   This sets the project’s height. */
+/* First image/video: full viewport width, natural height.
+   This defines the row’s target height via JS */
 .project-item:first-child img,
 .project-item:first-child video {
     width: 100vw;

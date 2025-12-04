@@ -109,6 +109,7 @@ function renderProjects(projects) {
 
 function setProjectHeights() {
     const projects = document.querySelectorAll('.project');
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
 
     projects.forEach(projectEl => {
         const firstMedia = projectEl.querySelector(
@@ -116,30 +117,32 @@ function setProjectHeights() {
         );
         if (!firstMedia) return;
 
-        // reset to natural height first (important on resize)
+        // Reset first
         projectEl.style.height = 'auto';
 
-        const applyHeight = () => {
-            const rect = firstMedia.getBoundingClientRect();
-            if (rect.height > 0) {
-                projectEl.style.height = rect.height + 'px';
-            }
-        };
+        function applyHeightFromDimensions(w, h) {
+            if (!w || !h) return;
+            const ratio = h / w;
+            const targetHeight = viewportWidth * ratio;  // height for width: 100vw
+            projectEl.style.height = targetHeight + 'px';
+        }
 
         if (firstMedia.tagName === 'IMG') {
-            // if already loaded, we can measure right away
-            if (firstMedia.complete && firstMedia.naturalHeight) {
-                applyHeight();
+            if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
+                applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
             } else {
-                // wait until the image has fully loaded
-                firstMedia.addEventListener('load', applyHeight, { once: true });
+                firstMedia.addEventListener('load', () => {
+                    applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
+                }, { once: true });
             }
         } else if (firstMedia.tagName === 'VIDEO') {
-            // video dimensions are ready after metadata is loaded
-            if (firstMedia.readyState >= 1 && firstMedia.videoHeight) {
-                applyHeight();
+            const video = firstMedia;
+            if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
+                applyHeightFromDimensions(video.videoWidth, video.videoHeight);
             } else {
-                firstMedia.addEventListener('loadedmetadata', applyHeight, { once: true });
+                video.addEventListener('loadedmetadata', () => {
+                    applyHeightFromDimensions(video.videoWidth, video.videoHeight);
+                }, { once: true });
             }
         }
     });
