@@ -168,6 +168,12 @@ body {
     touch-action: none;     /* prevent touch scroll leaking to body on iOS */
 }
 
+/* When Index is open, lock page scroll so home can't move underneath */
+html.index-open,
+body.index-open {
+    overflow: hidden;
+}
+
 
 
 
