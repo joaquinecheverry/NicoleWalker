@@ -11,7 +11,7 @@ document.getElementById("Title").addEventListener("click", () => {
     if (patternStarted) {
         const wrap = document.getElementById("pattern-wrapper");
         wrap.style.display = "none";
-                // 🔓 UNLOCK SCROLL
+                //  UNLOCK SCROLL
         document.documentElement.classList.remove("index-open");
         document.body.classList.remove("index-open");
         document.body.style.position = "";
@@ -92,7 +92,7 @@ project.media.forEach(item => {
         el.muted = true;
         el.playsInline = true;
 
-        // 🚫 don’t autoplay all videos on mobile
+        //  don’t autoplay all videos on mobile
         if (!isMobile) {
             el.autoplay = true;
         } else {
@@ -107,7 +107,7 @@ project.media.forEach(item => {
         const src = `${rawSrc}${sep}w=${targetW}&auto=format&q=80`;
 
         el.src = src;
-        el.loading = 'lazy';   // 🔥 built-in lazy loading
+        el.loading = 'lazy';   //  built-in lazy loading
     }
 
     cell.appendChild(el);
@@ -290,8 +290,8 @@ async function loadProjectsFromSanity() {
         const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
         // 🔧 Different settings per device
-        const thumbWidth = isMobile ? 220 : 100;   // smaller on mobile for smooth motion
-        const fullWidth  = isMobile ? 1200 : 1600; // still sharp when zoomed
+        const thumbWidth = isMobile ? 100 : 100;   // smaller on mobile for smooth motion
+        const fullWidth  = isMobile ? 900 : 900; // still sharp when zoomed
         const maxCount   = isMobile ? 150 : 150;    // fewer images on mobile for performance
 
         // Collect image URLs for the Index pattern view

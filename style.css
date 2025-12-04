@@ -87,7 +87,7 @@ body {
 /* One shoot / project row */
 .project {
     position: relative;
-    width: 100vw;
+    width: 100%;
     height: auto;          /* JS will set fixed height */
     overflow-x: auto;      /* allow horizontal scroll */
     overflow-y: hidden;
