@@ -175,7 +175,9 @@ function setProjectHeights() {
     });
 }
 
-
+window.addEventListener('resize', () => {
+    setProjectHeights();
+});
 
 
 // -----------------------------

@@ -98,8 +98,10 @@ body {
 .project-track {
     display: flex;
     align-items: stretch;
+    justify-content: flex-start;  /* make sure they butt up from the left */
     height: 100%;
     background-color: #000;
+    font-size: 0;                 /* kill any stray whitespace */
 }
 
 /* Each media cell */
@@ -109,23 +111,26 @@ body {
     align-items: center;
     justify-content: center;
     height: 100%;          /* fill the row height */
+    margin: 0;
+    padding: 0;
 }
+
 
 /* All media */
 .project-item img,
 .project-item video {
     display: block;
-    height: 100%;          /* match project row height */
-    width: auto;           /* width auto-adjusts */
+    height: 100%;    /* match project row height */
+    width: auto;     /* preserve aspect */
 }
 
-/* First image/video: full viewport width, natural height.
-   This defines the row’s target height via JS */
+/* First image: full width, sets the height via JS */
 .project-item:first-child img,
 .project-item:first-child video {
     width: 100vw;
     height: auto;
 }
+
 
 
 /* All NON-first images:
