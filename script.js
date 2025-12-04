@@ -1,6 +1,3 @@
-
-
-
 // Add to your script.js file
 document.getElementById("InfoButton").addEventListener("click", () => {
     const infoPanel = document.getElementById("InfoContent");
