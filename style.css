@@ -241,11 +241,11 @@ a:hover {
     padding-left: 0;
 }
 
-/* Mobile typography WITHOUT using viewport meta */
+/* Mobile typography WITHOUT viewport meta — brute force */
 @media screen and (max-device-width: 768px) {
     body {
-        font-size: 14px !important;
-        line-height: 1.45;
+        font-size: 22px !important;  /* big on purpose */
+        line-height: 1.4;
     }
 
     #nav,
@@ -254,7 +254,12 @@ a:hover {
     #aboutcontact,
     #Clients,
     #list {
-        font-size: 14px !important;
-        line-height: 1.5;
+        font-size: 27px !important;
+        line-height: 1.4;
+    }
+
+    #Title {
+        margin-left: 20px;
+        width: 150px;
     }
 }
