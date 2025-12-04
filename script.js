@@ -102,9 +102,8 @@ function renderProjects(projects) {
         main.appendChild(projectEl);
     });
 
-    // After rendering, match all heights to the first image per project
+    // After rendering, compute heights from natural dimensions
     setProjectHeights();
-    window.addEventListener('resize', setProjectHeights);
 }
 
 function setProjectHeights() {
@@ -117,20 +116,22 @@ function setProjectHeights() {
         );
         if (!firstMedia) return;
 
-        // Reset first
+        // reset first (important when resizing)
         projectEl.style.height = 'auto';
 
         function applyHeightFromDimensions(w, h) {
             if (!w || !h) return;
             const ratio = h / w;
-            const targetHeight = viewportWidth * ratio;  // height for width: 100vw
+            const targetHeight = viewportWidth * ratio; // height for 100vw
             projectEl.style.height = targetHeight + 'px';
         }
 
         if (firstMedia.tagName === 'IMG') {
             if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
+                // already loaded (including from cache)
                 applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
             } else {
+                // wait until the image has fully loaded
                 firstMedia.addEventListener('load', () => {
                     applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
                 }, { once: true });
@@ -147,6 +148,7 @@ function setProjectHeights() {
         }
     });
 }
+
 
 
 
