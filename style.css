@@ -300,3 +300,105 @@ html.index-open,
 body.index-open {
     background-color: #ffffff !important;
 }
+
+/* =======================================
+   INDEX PAGE (separate index-view.html)
+   ======================================= */
+
+html.index-page-root {
+  background-color: #ffffff;
+}
+
+body.index-page {
+  margin: 0;
+  background-color: #ffffff;
+  color: #000000;
+  overflow: hidden; /* index canvas handles everything */
+}
+
+/* Reuse existing nav, but keep it on white */
+body.index-page #nav {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Full-screen orbit area under the nav */
+body.index-page #pattern-wrapper {
+  position: fixed;
+  top: 6.5vh;   /* same height as nav */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+#index-loading,
+.index-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Links on the index page */
+body.index-page a {
+  color: inherit;
+  text-decoration: none;
+}
+body.index-page a:hover {
+  text-decoration: line-through;
+}
+/* =============== SEPARATE INDEX PAGE =============== */
+
+body.index-page {
+  margin: 0;
+  background: #ffffff;
+  color: #000;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Franklin Gothic Medium','Arial Narrow',Arial,sans-serif;
+}
+
+/* Top nav on index page */
+#index-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #000;
+  z-index: 10;
+}
+
+#index-nav a,
+#index-nav span {
+  font-size: 10pt;
+  text-decoration: none;
+  color: #000;
+}
+
+#index-nav a:hover {
+  text-decoration: line-through;
+}
+
+/* Area where the orbit canvas lives */
+#pattern-wrapper-index {
+  position: fixed;
+  top: 52px;   /* same as nav height */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  overflow: hidden;
+}
