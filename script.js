@@ -17,13 +17,13 @@ function closeIndexView() {
         wrap.innerHTML = "";
     }
 
-    // remove index-open (scroll lock)
+    // remove index-open (no more "index mode")
     document.documentElement.classList.remove("index-open");
     document.body.classList.remove("index-open");
 
-    // 🔥 FORCE background back to black (inline style beats everything)
-    document.documentElement.style.backgroundColor = "#000000";
-    document.body.style.backgroundColor = "#000000";
+    // ❌ clear any inline background colors so CSS (black) takes over
+    document.documentElement.style.backgroundColor = "";
+    document.body.style.backgroundColor = "";
 
     // make sure body is not fixed in any weird way
     document.body.style.position = "";
@@ -463,13 +463,14 @@ document.getElementById("Index").addEventListener("click", () => {
     // remember scroll (in case you want it later)
     scrollYBeforeIndex = window.scrollY || window.pageYOffset || 0;
 
-    // 🔒 lock scroll via class only (no body position:fixed)
+    // mark as "index mode" (we only use the class if we want later)
     document.documentElement.classList.add("index-open");
     document.body.classList.add("index-open");
 
-    // 🔥 FORCE background to white while Index is open
-    document.documentElement.style.backgroundColor = "#ffffff";
-    document.body.style.backgroundColor = "#ffffff";
+    // ❌ do NOT touch html/body background here – #pattern-wrapper is white
+    document.documentElement.style.backgroundColor = "";
+    document.body.style.backgroundColor = "";
+
 
     // nav should always be visible and black text on white
     const nav = document.getElementById("nav");
