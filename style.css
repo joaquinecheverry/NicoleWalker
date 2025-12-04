@@ -146,19 +146,37 @@ body {
 #index {
     cursor: pointer  !important;
 }
-/* Full-screen Index overlay */
+/* Full-screen overlay for Index */
 #pattern-wrapper {
-    display: none;          /* hidden until Index is clicked */
+    display: none;
     position: fixed;
-    inset: 0;               /* top:0; right:0; bottom:0; left:0 */
+    inset: 0;
     width: 100vw;
-    background: #ffffff;
+    height: 100vh;          /* fallback */
+    background: #ffffff;    /* Index is white */
     z-index: 1500;
     overflow: hidden;
     box-sizing: border-box;
-    touch-action: none;     /* prevent touch scroll leaking to body on iOS */
 }
 
+/* On iOS and modern browsers, use dynamic viewport height */
+@supports (height: 100dvh) {
+  #pattern-wrapper {
+    height: 100dvh;
+  }
+}
+
+/* Extend Index background into the iOS bottom safe area */
+#pattern-wrapper::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: env(safe-area-inset-bottom);
+    background: #ffffff;
+    pointer-events: none;
+}
 /* When Index is open, lock page scroll so home can't move underneath */
 html.index-open,
 body.index-open {
@@ -265,5 +283,5 @@ a:hover {
 }
 
 body.index-open {
-    background-color: white !important;
+    overflow: hidden;
 }
