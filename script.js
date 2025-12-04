@@ -11,7 +11,9 @@ document.getElementById("Title").addEventListener("click", () => {
     if (patternStarted) {
         const wrap = document.getElementById("pattern-wrapper");
         wrap.style.display = "none";
-                //  UNLOCK SCROLL
+        wrap.classList.remove("mobile-index");
+        wrap.innerHTML = "";
+
         document.documentElement.classList.remove("index-open");
         document.body.classList.remove("index-open");
         document.body.style.position = "";
@@ -19,26 +21,28 @@ document.getElementById("Title").addEventListener("click", () => {
         document.body.style.left = "";
         document.body.style.right = "";
         document.body.style.width = "";
-        window.scrollTo(0, scrollYBeforeIndex);
- 
-        patternStarted = false;
-        // Remove class from nav to restore white text
+
         document.getElementById("nav").classList.remove("pattern-active");
+
         if (patternSketch) {
             patternSketch.remove();
             patternSketch = null;
         }
-    }
-    
 
+        patternStarted = false;
+    }
 
     const infoPanel = document.getElementById("InfoContent");
-    if (infoPanel.classList.contains("active")) {
-        infoPanel.classList.remove("active");
-    }
-    
+    infoPanel.classList.remove("active");
+
+    // recalc row heights after layout unlock
+    setTimeout(() => {
+        setProjectHeights();
+    }, 0);
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 });
+
 
 // -----------------------------
 // LOAD PROJECTS FROM SANITY
