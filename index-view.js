@@ -394,9 +394,8 @@ function handleClickOrTap() {
 
 // ------------- BOOT -------------
 
-// ------------- BOOT -------------
-
 document.addEventListener("DOMContentLoaded", () => {
+  // Info toggle for INDEX page (mirror home)
   const infoBtn   = document.getElementById("InfoButton");
   const infoPanel = document.getElementById("InfoContent");
 
@@ -416,8 +415,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // keep the rest of your initPatternOrbitView() call
+  // orbit init
   initPatternOrbitView();
 });
-
-

@@ -9,30 +9,30 @@ const infoPanel  = document.getElementById("InfoContent");
 const titleEl    = document.getElementById("Title");
 const main       = document.getElementById("main-column");
 
+// unified Info toggle for HOME
 if (infoButton && infoPanel) {
-  infoButton.addEventListener("click", () => {
-    const isActive = infoPanel.classList.toggle("active");
-    // drives the strikethrough state
-    document.body.classList.toggle("info-open", isActive);
+  infoButton.addEventListener("click", (e) => {
+    e.preventDefault?.();
+
+    const willOpen = !infoPanel.classList.contains("active");
+
+    if (willOpen) {
+      infoPanel.classList.add("active");
+      infoButton.classList.add("info-open");   // ✅ strike ON
+    } else {
+      infoPanel.classList.remove("active");
+      infoButton.classList.remove("info-open"); // ✅ strike OFF
+    }
   });
 }
 
-
-// Clicking "Nicole Walker" scrolls to top AND closes Info
+// Clicking "Nicole Walker" just scrolls to top of gallery
 if (titleEl) {
   titleEl.addEventListener("click", () => {
-    // close info panel if open
-    if (infoPanel) {
-      infoPanel.classList.remove("active");
-    }
-    if (infoButton) {
-      infoButton.classList.remove("info-open");
-    }
-
-    // scroll to top like before
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
+
 
 // -----------------------------
 // RENDER GALLERY ROWS

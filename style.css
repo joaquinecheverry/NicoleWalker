@@ -256,11 +256,29 @@ a:hover {
     text-decoration: line-through;
 }
 
-/* still works for <p> nav items too */
-#Title:hover,
-#Index:hover,
-#InfoButton:hover {
+#Title,
+#Index,
+#InfoButton {
+  text-decoration: none;
+}
+
+/* Desktop hover only (real pointer & hover) */
+@media (hover: hover) and (pointer: fine) {
+  #Title:hover,
+  #Index:hover,
+  #InfoButton:hover {
     text-decoration: line-through;
+  }
+
+  /* Links inside Info (AMAZE / ART) – underline off on hover, like home */
+  #aboutcontact a:hover {
+    text-decoration: none;
+  }
+}
+
+/* Info open state (works on mobile + desktop) */
+#InfoButton.info-open {
+  text-decoration: line-through;
 }
 
 
@@ -630,35 +648,89 @@ body.index-page #InfoButton.info-open {
   }
 }
 
+/* ---------------------------------
+   INFO OVERLAY (HOME + INDEX)
+---------------------------------- */
+
 #InfoContent {
-  display: none;
+  display: none; /* hidden by default */
   position: fixed;
   top: 7.2vh;
   left: 0;
   width: 100vw;
-
-  /* Make it a full-height overlay minus the nav */
-  height: calc(100vh - 7.2vh);
-
+  height: calc(100vh - 6.5vh);
   font-size: 10pt;
   color: white;
   z-index: 1500;
-
-  /* IMPORTANT: allow scroll inside panel */
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
-  overscroll-behavior: contain;
+  overflow-y: auto;              /* ✅ scrollable on mobile */
+  -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
+  padding-bottom: 80px;
+  background: transparent;
 }
 
-/* INFO PANEL LINK COLORS — HOME + INDEX */
+/* active = visible */
+#InfoContent.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* left column text */
+#aboutcontact {
+  font-size: 10pt;
+  grid-column: 1;
+  padding-left: 20px;
+}
+
+/* right column clients list */
+#Clients {
+  grid-column: 3;
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  padding-left: 0;
+}
+
+/* links inside Info */
 #InfoContent a {
-  color: white !important;        /* default state */
-  text-decoration: underline;     /* match home behavior */
+  text-decoration: underline;
+  color: white;
 }
 
 #InfoContent a:hover {
-  text-decoration: none;          /* hover removes underline */
-  color: white !important;
+  text-decoration: none;
+  color: white;
+}
+
+/* strike state for Info button (home + index) */
+#InfoButton.info-open {
+  text-decoration: line-through;
+}
+
+/* ------------------------------
+   MOBILE TWEAKS
+------------------------------ */
+
+@media (max-width: 768px) {
+  /* stack Info into a single column & give more padding */
+  #InfoContent.active {
+    display: block;
+    padding: 16px 20px 120px 20px;
+  }
+
+  #aboutcontact {
+    position: static;
+    padding-left: 0;
+    margin-bottom: 32px;
+  }
+
+  #Clients {
+    margin-top: 0;
+  }
+
+  /* make Info hit-area bigger on mobile */
+  #InfoButton {
+    padding: 8px 10px;
+    margin-right: 6px;
+  }
 }
