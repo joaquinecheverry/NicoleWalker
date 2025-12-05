@@ -7,18 +7,18 @@ import { localPatternImages } from "./pattern-images.js";
 // Shuffle a copy so order feels random each load
 let patternSources = [...localPatternImages].sort(() => Math.random() - 0.5);
 
-// 🔧 TUNING CONSTANTS (you can tweak these)
-// Smaller thumbs = faster load / less decode cost
-const THUMB_MAX_DIM_DESKTOP = 60;
-const THUMB_MAX_DIM_MOBILE  = 45;
+// 🔧 TUNING CONSTANTS
+// Thumbnails (in memory, BEFORE orbit scaling)
+const THUMB_MAX_DIM_DESKTOP = 110;   // was 60 – sharper thumbs on desktop
+const THUMB_MAX_DIM_MOBILE  = 80;    // was 45 – bigger + crisper on phones
 
 // Full-image max size for zoom
-const MAX_FULL_DIM_DESKTOP = 900;
-const MAX_FULL_DIM_MOBILE  = 700;
+const MAX_FULL_DIM_DESKTOP = 1700;   // bump for sharper full-screen
+const MAX_FULL_DIM_MOBILE  = 1100;
 
 // Concurrency: more = faster loading, but more bursty
 const MAX_CONCURRENT_DESKTOP = 4;
-const MAX_CONCURRENT_MOBILE  = 4;
+const MAX_CONCURRENT_MOBILE  = 3;
 
 // p5 instance
 let patternSketch = null;
@@ -37,6 +37,7 @@ function initPatternOrbitView() {
     return;
   }
 
+  // Figure out “mobile-ish” layout once at start
   const isMobileScreen = window.innerWidth < 768;
   const THUMB_MAX_DIM = isMobileScreen ? THUMB_MAX_DIM_MOBILE : THUMB_MAX_DIM_DESKTOP;
   const MAX_FULL_DIM  = isMobileScreen ? MAX_FULL_DIM_MOBILE  : MAX_FULL_DIM_DESKTOP;
@@ -44,7 +45,7 @@ function initPatternOrbitView() {
     ? MAX_CONCURRENT_MOBILE
     : MAX_CONCURRENT_DESKTOP;
 
-  // Orbit parameters (same vibe as before, tweak if you like)
+  // Orbit parameters (same vibe as before)
   let xPatternValue = 8;
   let yPatternValue = 8;
   let radiusX = 0.45;
@@ -52,6 +53,7 @@ function initPatternOrbitView() {
 
   patternSketch = new p5((p) => {
     let imgs = [];             // thumb images
+    let fullResImgs = [];      // cache per index
     let offset = 0;
     let mouseXPos = 0;
     let mouseYPos = 0;
@@ -59,20 +61,21 @@ function initPatternOrbitView() {
     let selectedImage = null;
     let loadingFullRes = false;
     let appearStartTimes = [];
-    let modalImg = null;       // only ONE full-res in memory
+    let modalImg = null;       // current full-res in the modal
 
+    // ---------- SETUP ----------
     p.setup = () => {
       const w = wrap.offsetWidth || window.innerWidth;
       const h = wrap.offsetHeight || window.innerHeight;
       p.createCanvas(w, h).parent(wrap);
 
-      // lower frame rate + no smoothing = less CPU/GPU
+      // lower frame rate = less CPU, smoother on mobile
       p.frameRate(20);
       p.pixelDensity(1);
-      p.noSmooth();
 
       const n = patternSources.length;
       imgs = new Array(n).fill(null);
+      fullResImgs = new Array(n).fill(null);
       hoverScales = new Array(n).fill(1.0);
       appearStartTimes = new Array(n).fill(null);
 
@@ -91,7 +94,7 @@ function initPatternOrbitView() {
           p.loadImage(
             thumbUrl,
             (loadedImg) => {
-              // 🔧 keep thumbs tiny in memory
+              // keep thumbs small but not tiny, so they stay sharp
               if (
                 loadedImg.width > THUMB_MAX_DIM ||
                 loadedImg.height > THUMB_MAX_DIM
@@ -134,13 +137,64 @@ function initPatternOrbitView() {
       mouseYPos = p.mouseY;
     };
 
-    p.mouseClicked = () => {
+    // ---------- FULL-RES LOADER (for modal) ----------
+    function loadFullFor(index) {
+      // already have it
+      if (fullResImgs[index]) {
+        modalImg = fullResImgs[index];
+        return;
+      }
+
+      const srcObj = patternSources[index];
+      const fullUrl = (srcObj && srcObj.full) || srcObj.thumb;
+      if (!fullUrl) {
+        console.warn("No fullUrl for index", index);
+        return;
+      }
+
+      loadingFullRes = true;
+      modalImg = null;
+      const thisIndex = index; // lock index into this closure
+
+      p.loadImage(
+        fullUrl,
+        (loadedImg) => {
+          // cap full image size based on desktop/mobile
+          if (
+            loadedImg.width > MAX_FULL_DIM ||
+            loadedImg.height > MAX_FULL_DIM
+          ) {
+            const ratio = Math.min(
+              MAX_FULL_DIM / loadedImg.width,
+              MAX_FULL_DIM / loadedImg.height
+            );
+            loadedImg.resize(
+              loadedImg.width * ratio,
+              loadedImg.height * ratio
+            );
+          }
+
+          fullResImgs[thisIndex] = loadedImg;
+          modalImg = loadedImg;
+          loadingFullRes = false;
+        },
+        (err) => {
+          console.error("Failed to load full:", fullUrl, err);
+          loadingFullRes = false;
+          // fallback so we don't get stuck on "Loading..."
+          modalImg = imgs[thisIndex] || null;
+        }
+      );
+    }
+
+    // ---------- CLICK / TOUCH HANDLERS ----------
+    function handleClickOrTap() {
       // close modal if open
       if (selectedImage !== null) {
         selectedImage = null;
         loadingFullRes = false;
         modalImg = null;
-        return;
+        return false;
       }
 
       // otherwise, see if we clicked a thumb
@@ -158,15 +212,15 @@ function initPatternOrbitView() {
           Math.sin((pos * yPatternValue * Math.PI) / patternSources.length) *
             (p.height * radiusY);
 
-        const maxSize = isMobileScreen ? 26 : 50;
+        const maxSize = isMobileScreen ? 60 : 85; // clickable radius
         const ratio = Math.min(maxSize / img.width, maxSize / img.height);
         const baseW = img.width * ratio;
         const baseH = img.height * ratio;
 
         const hoverScale = hoverScales[i] || 1;
         const appear = 1;
-        const w = baseW * (0.8 + 0.2 * appear) * hoverScales[i];
-        const h = baseH * (0.8 + 0.2 * appear) * hoverScales[i];
+        const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
+        const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
 
         const dx = p.mouseX - x;
         const dy = p.mouseY - y;
@@ -174,41 +228,22 @@ function initPatternOrbitView() {
 
         if (dx * dx + dy * dy <= radius * radius) {
           selectedImage = i;
-          modalImg = null;
-
-          const srcObj = patternSources[i];
-          const fullUrl = (srcObj && srcObj.full) || srcObj.thumb;
-          if (!fullUrl) break;
-
-          loadingFullRes = true;
-          p.loadImage(
-            fullUrl,
-            (loadedImg) => {
-              // 🔧 cap zoom resolution
-              if (
-                loadedImg.width > MAX_FULL_DIM ||
-                loadedImg.height > MAX_FULL_DIM
-              ) {
-                const ratio = Math.min(
-                  MAX_FULL_DIM / loadedImg.width,
-                  MAX_FULL_DIM / loadedImg.height
-                );
-                loadedImg.resize(
-                  loadedImg.width * ratio,
-                  loadedImg.height * ratio
-                );
-              }
-              modalImg = loadedImg;
-              loadingFullRes = false;
-            },
-            () => {
-              console.log("Failed to load full:", fullUrl);
-              loadingFullRes = false;
-            }
-          );
-          break;
+          loadFullFor(i);
+          return false;
         }
       }
+
+      return false;
+    }
+
+    // Desktop click
+    p.mouseClicked = () => {
+      return handleClickOrTap();
+    };
+
+    // REAL mobile: tap → treat same as mouse click
+    p.touchEnded = () => {
+      return handleClickOrTap();
     };
 
     p.keyPressed = () => {
@@ -226,39 +261,10 @@ function initPatternOrbitView() {
         return;
       }
 
-      // when arrowing, load the new full-res
-      const srcObj = patternSources[selectedImage];
-      const fullUrl = (srcObj && srcObj.full) || srcObj.thumb;
-      if (!fullUrl) return;
-
-      loadingFullRes = true;
-      modalImg = null;
-      p.loadImage(
-        fullUrl,
-        (loadedImg) => {
-          if (
-            loadedImg.width > MAX_FULL_DIM ||
-            loadedImg.height > MAX_FULL_DIM
-          ) {
-            const ratio = Math.min(
-              MAX_FULL_DIM / loadedImg.width,
-              MAX_FULL_DIM / loadedImg.height
-            );
-            loadedImg.resize(
-              loadedImg.width * ratio,
-              loadedImg.height * ratio
-            );
-          }
-          modalImg = loadedImg;
-          loadingFullRes = false;
-        },
-        () => {
-          console.log("Failed to load full res:", fullUrl);
-          loadingFullRes = false;
-        }
-      );
+      loadFullFor(selectedImage);
     };
 
+    // ---------- DRAW LOOP ----------
     p.draw = () => {
       p.background(255);
 
@@ -279,7 +285,10 @@ function initPatternOrbitView() {
       let anyHovering = false;
 
       const orbitScale = isMobileCanvas ? 0.9 : 1.0;
-      const maxSizeBase = isMobileCanvas ? 22 : 50;
+      const maxSizeBase = isMobileCanvas ? 36 : 70; // 👈 bigger thumbnails
+
+      // For thumbnails, keep performance but use slightly better sizes
+      p.noSmooth();
 
       for (let i = 0; i < patternSources.length; i++) {
         const img = imgs[i];
@@ -333,7 +342,7 @@ function initPatternOrbitView() {
       p.noTint();
       p.cursor(anyHovering || selectedImage !== null ? "pointer" : "default");
 
-      // modal full-screen image
+      // ---------- MODAL FULL-SCREEN IMAGE ----------
       if (selectedImage !== null) {
         const img = modalImg || imgs[selectedImage];
         if (!img) {
@@ -350,7 +359,9 @@ function initPatternOrbitView() {
         const modalH = img.height * ratio;
 
         if (loadingFullRes || !modalImg) {
+          // blurred preview while full res loads
           p.drawingContext.filter = "blur(8px)";
+          p.smooth();
           p.imageMode(p.CENTER);
           p.image(img, p.width / 2, p.height / 2, modalW, modalH);
           p.drawingContext.filter = "none";
@@ -358,9 +369,13 @@ function initPatternOrbitView() {
           p.fill(0);
           p.textAlign(p.CENTER, p.CENTER);
           p.text("Loading...", p.width / 2, p.height / 2);
+          p.noSmooth();
         } else {
+          // final full-res: smoothing ON so it’s not pixelated
+          p.smooth();
           p.imageMode(p.CENTER);
           p.image(modalImg, p.width / 2, p.height / 2, modalW, modalH);
+          p.noSmooth();
         }
       }
     };
