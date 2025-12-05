@@ -34,7 +34,7 @@ body {
     color: black;
 }
 
-#nav:not(.pattern-active) #Title {
+body.home-page #nav:not(.pattern-active) #Title {
     mix-blend-mode: difference;
 }
 
@@ -229,6 +229,24 @@ a:hover {
     color: white;
 }
 
+/* Remove underline from nav links (home + index page) */
+#nav a {
+    text-decoration: none;
+}
+
+/* Keep your line-through hover behavior for nav items */
+#nav a:hover {
+    text-decoration: line-through;
+}
+
+/* still works for <p> nav items too */
+#Title:hover,
+#Index:hover,
+#InfoButton:hover {
+    text-decoration: line-through;
+}
+
+
 #InfoContent.active {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr; /* Match nav's 3 columns */
@@ -402,3 +420,127 @@ body.index-page {
   background: #ffffff;
   overflow: hidden;
 }
+
+/* ---------- INDEX PAGE OVERRIDES ---------- */
+
+body.index-page {
+    background-color: #ffffff;  /* white background for index page */
+}
+
+/* Make nav text black on index page */
+body.index-page #nav {
+    color: #000000 !important;
+}
+
+/* Make nav links black + no blend mode weirdness */
+body.index-page #nav a {
+    color: #000000 !important;
+    text-decoration: none;  /* still no underline in nav */
+}
+
+/* On index page, disable mix-blend for the title */
+body.index-page #Title {
+    mix-blend-mode: normal;
+}
+/* =========================
+   INDEX PAGE (index-view.html)
+   ========================== */
+
+/* Index page background + base text */
+body.index-page {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Use same layout as home, but black text on white */
+body.index-page #nav {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Turn OFF mix-blend-mode on index page so text is stable */
+body.index-page #Title,
+body.index-page #Index,
+body.index-page #InfoButton {
+    mix-blend-mode: normal;
+}
+
+/* Links in the index header are black, no underline by default */
+body.index-page #Title a,
+body.index-page #Index a,
+body.index-page #InfoButton a {
+    color: #000000;
+    text-decoration: none;
+}
+
+/* Optional: hover on index page */
+body.index-page #Title a:hover,
+body.index-page #Index a:hover,
+body.index-page #InfoButton a:hover {
+    text-decoration: line-through;
+}
+
+/* ---- UNIVERSAL NAV HOVER STYLE ---- */
+#nav #Title:hover,
+#nav #Index:hover,
+#nav #InfoButton:hover,
+#index-nav a:hover,
+#index-nav span:hover {
+    text-decoration: line-through;
+}
+
+/* Prevent underline on index page links except on hover */
+#index-nav a {
+    text-decoration: none;
+}
+
+#index-nav a:hover {
+    text-decoration: line-through;
+}
+
+/* =========================
+   INDEX PAGE OVERRIDES
+   ========================= */
+
+/* White background on index page */
+body.index-page {
+  background-color: #ffffff;
+}
+
+/* Nav on index page: black text, no mix-blend weirdness */
+body.index-page #nav {
+  color: #000000;
+}
+
+body.index-page #Title,
+body.index-page #Index,
+body.index-page #InfoButton {
+  color: #000000;
+}
+
+/* Title is an <a> here → remove underline, keep strike-through on hover */
+body.index-page #Title {
+  text-decoration: none;
+  mix-blend-mode: normal;  /* stop the "difference" effect on white bg */
+}
+
+body.index-page #Title:hover,
+body.index-page #Index:hover,
+body.index-page #InfoButton:hover {
+  text-decoration: line-through;
+}
+
+/* Info overlay on index page: show black text on white bg */
+body.index-page #InfoContent {
+  color: #000000;
+}
+
+body.index-page #InfoContent a {
+  color: #000000;
+}
+
+/* If you want extra padding under the client list */
+#list {
+  padding-bottom: 200px;  /* adjust to taste */
+}
+

@@ -126,7 +126,7 @@ project.media.forEach(item => {
 
         // add Sanity transforms safely (works whether or not there's already a '?')
         const sep = rawSrc.includes('?') ? '&' : '?';
-        const targetW = isMobile ? 900 : 1600;
+        const targetW = isMobile ? 750 : 1400;
         const src = `${rawSrc}${sep}w=${targetW}&auto=format&q=80`;
 
         el.src = src;

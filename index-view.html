@@ -11,18 +11,103 @@
   <link rel="stylesheet" href="style.css?v=idx1">
 </head>
 <body class="index-page">
-  <!-- simple nav for the index page -->
-  <nav id="index-nav">
-    <a href="index.html" class="nav-home">Nicole Walker</a>
-    <span class="nav-center">Index</span>
-    <a href="index.html#InfoContent" class="nav-info">Info</a>
-  </nav>
+  <!-- same nav structure as home -->
+  <div id="nav">
+    <!-- Title = link back home -->
+    <a id="Title" href="index.html">Nicole Walker</a>
 
-  <!-- THIS id must match what index-view.js uses -->
+    <!-- Index = just a label here (already on Index page) -->
+    <p id="Index">Index</p>
+
+    <!-- Info = plain text button (JS will toggle overlay, no link jump) -->
+    <p id="InfoButton">Info</p>
+  </div>
+
+  <!-- Info overlay (same markup as on home page) -->
+  <div id="InfoContent">
+    <div id="aboutcontact">
+      <p>Creative Director, Stylist and Artist.</p>
+      <p>info@nicolewalker.se</p>
+      <br>
+      <p>Founder of <a href="https://amaze.lol/">AMAZE</a></p>
+      <p><a href="https://www.nicolewalker.studio/">ART</a></p>
+    </div>
+    <div id="Clients">
+      <p>Clients</p>
+      <br>
+      <p id="list">
+        Acne Studios<br>
+        H&M<br>
+        Our Legacy<br>
+        Vogue US<br>
+        Interview Magazine<br>
+        Dramaten<br>
+        Ann-Sofie Back<br>
+        Hodakova<br>
+        Robyn<br>
+        Yung Lean<br>
+        Carcy Magazine<br>
+        Replica Magazine<br>
+        Haal<br>
+        NK<br>
+        Kaleidoscope Magazine<br>
+        Novembre Magazine<br>
+        Aplace<br>
+        Venczel<br>
+        Nhorm<br>
+        Vagabond<br>
+        Rave Review<br>
+        Gestuz<br>
+        Kulturhuset Stadsteatern<br>
+        Ikea<br>
+        King Kong Magazine<br>
+        Bon Magazine<br>
+        Low Classic<br>
+        Trinite<br>
+        Happy Socks<br>
+        Magniberg<br>
+        Odda Magazine<br>
+        Encens Magazine<br>
+        Rollacoaster Magazine<br>
+        Wonderland Magazine<br>
+        Gant<br>
+        Stutterheim<br>
+        WeSC<br>
+        Carin Wester<br>
+        House of Dagmar<br>
+        Rodeo Magazine<br>
+        Metal Magazine<br>
+        MiniMarket<br>
+        Stine Goya<br>
+        Sleek Magazine<br>
+        Heroine Magazine<br>
+        Bullet Magazine<br>
+        Indie Magazine<br>
+        Polyester Zine<br>
+        ELLE<br>
+        Zalando<br>
+        Monki<br>
+        Weekday<br>
+        Cheap Monday<br>
+        Contributor Magazine<br>
+        Badland Magazine<br>
+        Bladee<br>
+        Anton Alvarez<br>
+        Say Lou Lou<br>
+        El Perro del Mar<br>
+        Zhala<br>
+        Baba Stiltz<br>
+        and more.
+      </p>
+    </div>
+  </div>
+
+  <!-- orbit canvas container -->
   <div id="pattern-wrapper-index"></div>
 
   <!-- p5 + index script at end so DOM exists first -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
-  <script src="index-view.js?v=idx1"></script>
+  <script type="module" src="index-view.js?v=idx1"></script>
 </body>
+
 </html>

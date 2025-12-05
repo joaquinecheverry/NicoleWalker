@@ -1,61 +1,20 @@
 // index-view.js
-// Standalone Index orbit page (no interaction with home scroll)
+// Standalone Index orbit page using LOCAL images (no Sanity)
 
-// ---------- SANITY FETCH ----------
+// ------------- IMPORT LOCAL LIST -------------
+import { localPatternImages } from "./pattern-images.js";
 
-const projectId = "hk21ncs5";
-const dataset = "production";
-const apiVersion = "2023-05-03";
+// Limit how many images we use in the orbit (helps a LOT)
+const isMobile = window.matchMedia("(max-width: 768px)").matches;
+const MAX_IMAGES = isMobile ? 60 : 120;   // tweak numbers if you want
 
-let patternSources = [];   // { thumb, full }[]
-let patternSketch = null;  // p5 instance
+let patternSources = [...localPatternImages]
+  .sort(() => 0.5 - Math.random())
+  .slice(0, MAX_IMAGES);
+// p5 instance
+let patternSketch = null;
 
-async function loadPatternImagesFromSanity() {
-  const query = `
-    *[_type == "photoCollection"] {
-      "media": images[]{
-        _type == "imageItem" => {
-          "type": "image",
-          "url": asset->url
-        },
-        _type == "videoItem" => {
-          "type": "video",
-          "url": file.asset->url
-        }
-      }
-    }
-  `;
-
-  const url =
-    `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}` +
-    `?query=${encodeURIComponent(query)}`;
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const collections = data.result || [];
-
-    const thumbWidth = 100;
-    const fullWidth = 900;
-    const maxCount = 150;
-
-    patternSources = collections
-      .flatMap(col => col.media || [])
-      .filter(item => item && item.type === "image")
-      .map(item => ({
-        thumb: `${item.url}?w=${thumbWidth}&auto=format&q=80`,
-        full:  `${item.url}?w=${fullWidth}&auto=format&q=90`
-      }))
-      .sort(() => 0.5 - Math.random())
-      .slice(0, maxCount);
-
-    initPatternOrbitView();
-  } catch (err) {
-    console.error("Error loading pattern images:", err);
-  }
-}
-
-// ---------- P5 ORBIT VIEW ----------
+// ------------- P5 ORBIT VIEW -------------
 
 function initPatternOrbitView() {
   const wrap = document.getElementById("pattern-wrapper-index");
@@ -69,7 +28,7 @@ function initPatternOrbitView() {
     return;
   }
 
-  // default params (can match your Sanity indexSettings if you want later)
+  // You can tweak these to taste
   let xPatternValue = 8;
   let yPatternValue = 8;
   let radiusX = 0.45;
@@ -106,33 +65,36 @@ function initPatternOrbitView() {
       function kickOffLoads() {
         while (currentlyLoading < maxConcurrentLoads && nextIndexToLoad < n) {
           const i = nextIndexToLoad++;
-          const srcObj = patternSources[i];
-          if (!srcObj || !srcObj.thumb) continue;
-          const thumbUrl = srcObj.thumb;
+          const imgPath = patternSources[i];   // e.g. "pattern-images/032cHEELS2.webp"
+          if (!imgPath) continue;
 
           currentlyLoading++;
 
           p.loadImage(
-            thumbUrl,
+            imgPath,
             loadedImg => {
-              const maxDim = 200;
-              if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
-                const ratio = Math.min(
-                  maxDim / loadedImg.width,
-                  maxDim / loadedImg.height
-                );
-                loadedImg.resize(
-                  loadedImg.width * ratio,
-                  loadedImg.height * ratio
-                );
-              }
+              // downscale thumbs a bit so we’re not drawing huge files
+// smaller thumbs = faster draw & less memory
+const maxDim = (window.innerWidth || w) < 700 ? 110 : 150;
+
+if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
+  const ratio = Math.min(
+    maxDim / loadedImg.width,
+    maxDim / loadedImg.height
+  );
+  loadedImg.resize(
+    loadedImg.width * ratio,
+    loadedImg.height * ratio
+  );
+}
+
               imgs[i] = loadedImg;
               appearStartTimes[i] = p.millis();
               currentlyLoading--;
               kickOffLoads();
             },
             () => {
-              console.log("Failed to load thumb:", thumbUrl);
+              console.log("Failed to load thumb:", imgPath);
               currentlyLoading--;
               kickOffLoads();
             }
@@ -195,8 +157,7 @@ function initPatternOrbitView() {
           selectedImage = i;
 
           if (!fullResImgs[i]) {
-            const srcObj = patternSources[i];
-            const fullUrl = srcObj && (srcObj.full || srcObj.thumb);
+            const fullUrl = patternSources[i];   // same local file as thumb
             if (!fullUrl) continue;
 
             loadingFullRes = true;
@@ -233,8 +194,7 @@ function initPatternOrbitView() {
 
       if (selectedImage !== null && !fullResImgs[selectedImage]) {
         loadingFullRes = true;
-        const srcObj = patternSources[selectedImage];
-        const fullUrl = srcObj && (srcObj.full || srcObj.thumb);
+        const fullUrl = patternSources[selectedImage];
         if (!fullUrl) return;
 
         p.loadImage(
@@ -254,8 +214,10 @@ function initPatternOrbitView() {
     p.draw = () => {
       p.background(255);
 
-      if (p.width !== (wrap.offsetWidth || window.innerWidth) ||
-          p.height !== (wrap.offsetHeight || window.innerHeight)) {
+      if (
+        p.width !== (wrap.offsetWidth || window.innerWidth) ||
+        p.height !== (wrap.offsetHeight || window.innerHeight)
+      ) {
         p.resizeCanvas(
           wrap.offsetWidth || window.innerWidth,
           wrap.offsetHeight || window.innerHeight
@@ -351,15 +313,32 @@ function initPatternOrbitView() {
           p.text("Loading...", p.width / 2, p.height / 2);
         } else {
           p.imageMode(p.CENTER);
-          p.image(fullResImgs[selectedImage], p.width / 2, p.height / 2, modalW, modalH);
+          p.image(
+            fullResImgs[selectedImage],
+            p.width / 2,
+            p.height / 2,
+            modalW,
+            modalH
+          );
         }
       }
     };
   });
 }
 
-// ---------- BOOT ----------
+// ------------- BOOT -------------
 
 document.addEventListener("DOMContentLoaded", () => {
-  loadPatternImagesFromSanity();
+    // 1) Info toggle on Index page
+  const infoBtn   = document.getElementById("InfoButton");
+  const infoPanel = document.getElementById("InfoContent");
+
+  if (infoBtn && infoPanel) {
+    infoBtn.addEventListener("click", (e) => {
+      // defensive: if it ever becomes an <a>, stop default navigation
+      e.preventDefault?.();
+      infoPanel.classList.toggle("active");
+    });
+  }
+    initPatternOrbitView();
 });
