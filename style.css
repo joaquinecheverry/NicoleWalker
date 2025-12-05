@@ -559,3 +559,17 @@ body.index-page #InfoButton {
 #InfoContent.active > * {
   pointer-events: auto;   /* BUT allow clicks inside the panel itself */
 }
+/* Make sure InfoContent is scrollable everywhere */
+#InfoContent {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
+}
+
+/* Mobile override: avoid hard-coded 100vh, stretch between nav and bottom */
+@media (max-width: 768px) {
+  #InfoContent {
+    top: 6.5vh;      /* match your nav height */
+    bottom: 0;       /* pin to bottom instead of using height: calc(...) */
+    height: auto;    /* let it size itself between top and bottom */
+  }
+}

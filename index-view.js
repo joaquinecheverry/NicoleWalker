@@ -9,7 +9,7 @@ let patternSources = [...localPatternImages].sort(() => Math.random() - 0.5);
 
 // 🔧 TUNING CONSTANTS
 // Thumbnails (in memory, BEFORE orbit scaling)
-const THUMB_MAX_DIM_DESKTOP = 110;   // was 60 – sharper thumbs on desktop
+const THUMB_MAX_DIM_DESKTOP = 100;   // was 60 – sharper thumbs on desktop
 const THUMB_MAX_DIM_MOBILE  = 80;    // was 45 – bigger + crisper on phones
 
 // Full-image max size for zoom
@@ -283,7 +283,7 @@ function initPatternOrbitView() {
       const maxSizeBase = isMobileCanvas ? 36 : 70; // 👈 bigger thumbnails
 
       // For thumbnails, keep performance but use slightly better sizes
-      p.noSmooth();
+      p.smooth();
 
       for (let i = 0; i < patternSources.length; i++) {
         const img = imgs[i];
