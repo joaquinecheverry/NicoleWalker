@@ -236,13 +236,8 @@ function initPatternOrbitView() {
       return false;
     }
 
-    // Desktop click
-    p.mouseClicked = () => {
-      return handleClickOrTap();
-    };
-
-    // REAL mobile: tap → treat same as mouse click
-    p.touchEnded = () => {
+    // 🔑 Use mousePressed for BOTH desktop + mobile taps (styling unchanged)
+    p.mousePressed = () => {
       return handleClickOrTap();
     };
 
@@ -340,7 +335,14 @@ function initPatternOrbitView() {
       }
 
       p.noTint();
-      p.cursor(anyHovering || selectedImage !== null ? "pointer" : "default");
+
+      // Pointer: thumbs or modal -> pointer, otherwise default
+      if (anyHovering || selectedImage !== null) {
+        p.cursor("pointer");
+      } else {
+        p.cursor("default");
+      }
+
 
       // ---------- MODAL FULL-SCREEN IMAGE ----------
       if (selectedImage !== null) {
@@ -384,17 +386,36 @@ function initPatternOrbitView() {
 
 // ------------- BOOT -------------
 
+// ------------- BOOT -------------
+
 document.addEventListener("DOMContentLoaded", () => {
   // Info toggle for Index page (same behavior as home)
-  const infoBtn = document.getElementById("InfoButton");
+  const infoBtn   = document.getElementById("InfoButton");
   const infoPanel = document.getElementById("InfoContent");
+  const titleLink = document.getElementById("Title");
 
   if (infoBtn && infoPanel) {
+    // Desktop / general click
     infoBtn.addEventListener("click", (e) => {
       e.preventDefault?.();
       infoPanel.classList.toggle("active");
+    });
+
+    // Mobile tap
+    infoBtn.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      infoPanel.classList.toggle("active");
+    });
+  }
+
+  if (titleLink) {
+    // Mobile tap for back-to-home
+    titleLink.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      window.location.href = titleLink.href;
     });
   }
 
   initPatternOrbitView();
 });
+

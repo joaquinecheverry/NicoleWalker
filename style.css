@@ -539,8 +539,23 @@ body.index-page #InfoContent a {
   color: #000000;
 }
 
-/* If you want extra padding under the client list */
-#list {
-  padding-bottom: 200px;  /* adjust to taste */
+
+
+@media screen and (max-device-width: 768px) {
+ #list {
+  padding-bottom: 250px;  /* adjust to taste */
+}
 }
 
+body.index-page #nav a,
+body.index-page #InfoButton {
+  cursor: pointer !important;
+}
+/* Info panel should allow clicks only on its content, not block the canvas */
+#InfoContent {
+  pointer-events: none;   /* allow events to pass through */
+}
+
+#InfoContent.active > * {
+  pointer-events: auto;   /* BUT allow clicks inside the panel itself */
+}
