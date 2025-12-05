@@ -516,13 +516,16 @@ body.index-page #InfoButton a:hover {
 }
 
 /* ---- UNIVERSAL NAV HOVER STYLE ---- */
-#nav #Title:hover,
-#nav #Index:hover,
-#nav #InfoButton:hover,
-#index-nav a:hover,
-#index-nav span:hover {
+@media (hover: hover) and (pointer: fine) {
+  #nav #Title:hover,
+  #nav #Index:hover,
+  #nav #InfoButton:hover,
+  #index-nav a:hover,
+  #index-nav span:hover {
     text-decoration: line-through;
+  }
 }
+
 
 /* Prevent underline on index page links except on hover */
 #index-nav a {
@@ -586,14 +589,7 @@ body.index-page #nav a,
 body.index-page #InfoButton {
   cursor: pointer !important;
 }
-/* Info panel should allow clicks only on its content, not block the canvas */
-#InfoContent {
-  pointer-events: none;   /* allow events to pass through */
-}
 
-#InfoContent.active > * {
-  pointer-events: auto;   /* BUT allow clicks inside the panel itself */
-}
 /* Make sure InfoContent is scrollable everywhere */
 #InfoContent {
   overflow-y: auto;
@@ -667,6 +663,7 @@ body.index-page #InfoButton.info-open {
   box-sizing: border-box;
   padding-bottom: 80px;
   background: transparent;
+  pointer-events: auto;          /* ✅ allow touch/scroll */
 }
 
 /* active = visible */
@@ -726,11 +723,5 @@ body.index-page #InfoButton.info-open {
 
   #Clients {
     margin-top: 0;
-  }
-
-  /* make Info hit-area bigger on mobile */
-  #InfoButton {
-    padding: 8px 10px;
-    margin-right: 6px;
   }
 }
