@@ -50,23 +50,13 @@ body.home-page #nav:not(.pattern-active) #Title {
     text-align: left;
     cursor: pointer;
     margin-left: 20px;
-    mix-blend-mode: difference;
     width: 80px;
 }
 
-#Title:hover { 
-    text-decoration: line-through;
-}
-
 #Index { 
-    text-align: center;
     text-align: left;
     cursor: pointer;
     width: 40px;
-}
-
-#Index:hover { 
-    text-decoration: line-through;
 }
 
 #InfoButton { 
@@ -76,9 +66,33 @@ body.home-page #nav:not(.pattern-active) #Title {
     width: 20px;
 }
 
-#InfoButton:hover { 
+/* DESKTOP / REAL HOVER DEVICES:
+   hover = temporary line-through
+*/
+@media (hover: hover) {
+  #Title:hover,
+  #Index:hover,
+  #InfoButton:hover {
     text-decoration: line-through;
+  }
 }
+
+/* TOUCH DEVICES:
+   disable hover text-decoration completely so it
+   doesn't get "stuck" after tapping.
+   Only .info-open controls the line-through.
+*/
+@media (hover: none) {
+  #Title:hover,
+  #Index:hover,
+  #InfoButton:hover {
+    text-decoration: none;
+  }
+}
+
+
+
+
 
 #main-column {
     width: 100%;
@@ -638,3 +652,13 @@ body.index-page #InfoButton.info-open {
   box-sizing: border-box;
 }
 
+/* INFO PANEL LINK COLORS — HOME + INDEX */
+#InfoContent a {
+  color: white !important;        /* default state */
+  text-decoration: underline;     /* match home behavior */
+}
+
+#InfoContent a:hover {
+  text-decoration: none;          /* hover removes underline */
+  color: white !important;
+}
