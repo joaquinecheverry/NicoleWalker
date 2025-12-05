@@ -17,8 +17,8 @@ const MAX_FULL_DIM_DESKTOP = 900;
 const MAX_FULL_DIM_MOBILE  = 700;
 
 // Concurrency: more = faster loading, but more bursty
-const MAX_CONCURRENT_DESKTOP = 1;
-const MAX_CONCURRENT_MOBILE  = 1;
+const MAX_CONCURRENT_DESKTOP = 4;
+const MAX_CONCURRENT_MOBILE  = 4;
 
 // p5 instance
 let patternSketch = null;
