@@ -206,18 +206,21 @@ body.index-open {
 }
 
 #InfoContent {
-    display: none; /* Hidden by default */
+    display: none;              /* Hidden by default */
     position: fixed;
-    top: 7.2vh;
+    top: 7.2vh;                 /* same as before (just under nav) */
     left: 0;
+    right: 0;
+    bottom: 0;                  /* <-- instead of height: calc(...) */
     width: 100vw;
-    height: calc(100vh - 6.5vh);
     font-size: 10pt;
     color: white;
     z-index: 1500;
-    overflow-y: auto;
+    overflow-y: auto;           /* scrollable */
+    -webkit-overflow-scrolling: touch; /* iOS momentum scroll */
     box-sizing: border-box;
 }
+
 
 a {
     text-decoration: underline;
@@ -573,3 +576,43 @@ body.index-page #InfoButton {
     height: auto;    /* let it size itself between top and bottom */
   }
 }
+
+/* Info overlay links (same behavior on home + index) */
+body.home-page #InfoContent a,
+body.index-page #InfoContent a {
+    color: rgb(0, 0, 0);
+    text-decoration: underline;
+}
+
+body.home-page #InfoContent a:hover,
+body.index-page #InfoContent a:hover {
+    text-decoration: none;
+}
+
+/* Base Info button (home + index) */
+body.home-page #InfoButton,
+body.index-page #InfoButton {
+  text-decoration: none;
+}
+
+/* Hover: show strikethrough while hovering */
+body.home-page #InfoButton:hover,
+body.index-page #InfoButton:hover {
+  text-decoration: line-through;
+}
+
+/* While the panel is actually open, keep it striked */
+body.home-page #InfoButton.info-open,
+body.index-page #InfoButton.info-open {
+  text-decoration: line-through;
+}
+
+/* MOBILE ONLY: enlarge hit area of Info button */
+@media (max-width: 768px) {
+  #InfoButton {
+    padding: 12px 10px;   /* more tap-friendly */
+    margin: -6px -4px;    /* counteracts padding so layout doesn't shift */
+    display: inline-block;
+  }
+}
+

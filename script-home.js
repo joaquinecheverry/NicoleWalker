@@ -9,15 +9,38 @@ const infoPanel  = document.getElementById("InfoContent");
 const titleEl    = document.getElementById("Title");
 const main       = document.getElementById("main-column");
 
+// Info toggle: keep text style in sync with panel state
 if (infoButton && infoPanel) {
-  infoButton.addEventListener("click", () => {
-    infoPanel.classList.toggle("active");
+  infoButton.addEventListener("click", (e) => {
+    // in case this ever becomes an <a>, stop navigation
+    e.preventDefault?.();
+
+    const willOpen = !infoPanel.classList.contains("active");
+
+    if (willOpen) {
+      // open panel + mark button as "on"
+      infoPanel.classList.add("active");
+      infoButton.classList.add("info-open");
+    } else {
+      // close panel + clear strikethrough
+      infoPanel.classList.remove("active");
+      infoButton.classList.remove("info-open");
+    }
   });
 }
 
-// Clicking "Nicole Walker" just scrolls to top of gallery
+// Clicking "Nicole Walker" scrolls to top AND closes Info
 if (titleEl) {
   titleEl.addEventListener("click", () => {
+    // close info panel if open
+    if (infoPanel) {
+      infoPanel.classList.remove("active");
+    }
+    if (infoButton) {
+      infoButton.classList.remove("info-open");
+    }
+
+    // scroll to top like before
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
@@ -176,7 +199,7 @@ async function loadProjectsFromSanity() {
     }
   `;
 
-  const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=${encodeURIComponent(query)}`;
+  const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=\${encodeURIComponent(query)}`;
 
   try {
     const res = await fetch(url);

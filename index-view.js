@@ -187,54 +187,62 @@ function initPatternOrbitView() {
       );
     }
 
-    // ---------- CLICK / TOUCH HANDLERS ----------
-    function handleClickOrTap() {
-      // close modal if open
-      if (selectedImage !== null) {
-        selectedImage = null;
-        loadingFullRes = false;
-        modalImg = null;
-        return false;
-      }
+function handleClickOrTap() {
+  // 🔒 If Info overlay is open, DO NOT steal the click.
+  // Let normal links (AMAZE, ART, etc.) behave naturally.
+  const infoPanel = document.getElementById("InfoContent");
+  if (infoPanel && infoPanel.classList.contains("active")) {
+    return; // no `false` here → no preventDefault
+  }
 
-      // otherwise, see if we clicked a thumb
-      for (let i = patternSources.length - 1; i >= 0; i--) {
-        const img = imgs[i];
-        if (!img) continue;
+  // close modal if open
+  if (selectedImage !== null) {
+    selectedImage = null;
+    loadingFullRes = false;
+    modalImg = null;
+    return false; // we handled it
+  }
 
-        const pos = i + offset;
-        const x =
-          p.width / 2 +
-          Math.cos((pos * xPatternValue * Math.PI) / patternSources.length) *
-            (p.width * radiusX);
-        const y =
-          p.height / 2 +
-          Math.sin((pos * yPatternValue * Math.PI) / patternSources.length) *
-            (p.height * radiusY);
+  // otherwise, see if we clicked a thumb
+  for (let i = patternSources.length - 1; i >= 0; i--) {
+    const img = imgs[i];
+    if (!img) continue;
 
-        const maxSize = isMobileScreen ? 60 : 85; // clickable radius
-        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-        const baseW = img.width * ratio;
-        const baseH = img.height * ratio;
+    const pos = i + offset;
+    const x =
+      p.width / 2 +
+      Math.cos((pos * xPatternValue * Math.PI) / patternSources.length) *
+        (p.width * radiusX);
+    const y =
+      p.height / 2 +
+      Math.sin((pos * yPatternValue * Math.PI) / patternSources.length) *
+        (p.height * radiusY);
 
-        const hoverScale = hoverScales[i] || 1;
-        const appear = 1;
-        const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
-        const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
+    const maxSize = isMobileScreen ? 60 : 85; // clickable radius
+    const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+    const baseW = img.width * ratio;
+    const baseH = img.height * ratio;
 
-        const dx = p.mouseX - x;
-        const dy = p.mouseY - y;
-        const radius = Math.min(w, h) * 0.4;
+    const hoverScale = hoverScales[i] || 1;
+    const appear = 1;
+    const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
+    const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
 
-        if (dx * dx + dy * dy <= radius * radius) {
-          selectedImage = i;
-          loadFullFor(i);
-          return false;
-        }
-      }
+    const dx = p.mouseX - x;
+    const dy = p.mouseY - y;
+    const radius = Math.min(w, h) * 0.4;
 
-      return false;
+    if (dx * dx + dy * dy <= radius * radius) {
+      selectedImage = i;
+      loadFullFor(i);
+      return false; // we handled a thumb click
     }
+  }
+
+  // nothing handled → let browser do its thing
+  // (no `false` → no preventDefault)
+}
+
 
     // 🔑 Use mousePressed for BOTH desktop + mobile taps (styling unchanged)
     p.mousePressed = () => {
@@ -389,33 +397,27 @@ function initPatternOrbitView() {
 // ------------- BOOT -------------
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Info toggle for Index page (same behavior as home)
   const infoBtn   = document.getElementById("InfoButton");
   const infoPanel = document.getElementById("InfoContent");
-  const titleLink = document.getElementById("Title");
 
   if (infoBtn && infoPanel) {
-    // Desktop / general click
     infoBtn.addEventListener("click", (e) => {
       e.preventDefault?.();
-      infoPanel.classList.toggle("active");
-    });
 
-    // Mobile tap
-    infoBtn.addEventListener("touchend", (e) => {
-      e.preventDefault();
-      infoPanel.classList.toggle("active");
-    });
-  }
+      const willOpen = !infoPanel.classList.contains("active");
 
-  if (titleLink) {
-    // Mobile tap for back-to-home
-    titleLink.addEventListener("touchend", (e) => {
-      e.preventDefault();
-      window.location.href = titleLink.href;
+      if (willOpen) {
+        infoPanel.classList.add("active");
+        infoBtn.classList.add("info-open");
+      } else {
+        infoPanel.classList.remove("active");
+        infoBtn.classList.remove("info-open");
+      }
     });
   }
 
+  // keep the rest of your initPatternOrbitView() call
   initPatternOrbitView();
 });
+
 
