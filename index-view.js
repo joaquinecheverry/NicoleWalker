@@ -75,7 +75,7 @@ function initPatternOrbitView() {
             loadedImg => {
               // downscale thumbs a bit so we’re not drawing huge files
 // smaller thumbs = faster draw & less memory
-const maxDim = (window.innerWidth || w) < 700 ? 110 : 150;
+const maxDim = (window.innerWidth || w) < 700 ? 70 : 80;
 
 if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
   const ratio = Math.min(
