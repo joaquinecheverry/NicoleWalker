@@ -9,25 +9,14 @@ const infoPanel  = document.getElementById("InfoContent");
 const titleEl    = document.getElementById("Title");
 const main       = document.getElementById("main-column");
 
-// Info toggle: keep text style in sync with panel state
 if (infoButton && infoPanel) {
-  infoButton.addEventListener("click", (e) => {
-    // in case this ever becomes an <a>, stop navigation
-    e.preventDefault?.();
-
-    const willOpen = !infoPanel.classList.contains("active");
-
-    if (willOpen) {
-      // open panel + mark button as "on"
-      infoPanel.classList.add("active");
-      infoButton.classList.add("info-open");
-    } else {
-      // close panel + clear strikethrough
-      infoPanel.classList.remove("active");
-      infoButton.classList.remove("info-open");
-    }
+  infoButton.addEventListener("click", () => {
+    const isActive = infoPanel.classList.toggle("active");
+    // drives the strikethrough state
+    document.body.classList.toggle("info-open", isActive);
   });
 }
+
 
 // Clicking "Nicole Walker" scrolls to top AND closes Info
 if (titleEl) {
@@ -199,7 +188,8 @@ async function loadProjectsFromSanity() {
     }
   `;
 
-  const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=\${encodeURIComponent(query)}`;
+  const encodedQuery = encodeURIComponent(query);
+  const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=${encodedQuery}`;
 
   try {
     const res = await fetch(url);

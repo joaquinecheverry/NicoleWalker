@@ -616,3 +616,25 @@ body.index-page #InfoButton.info-open {
   }
 }
 
+#InfoContent {
+  display: none;
+  position: fixed;
+  top: 7.2vh;
+  left: 0;
+  width: 100vw;
+
+  /* Make it a full-height overlay minus the nav */
+  height: calc(100vh - 7.2vh);
+
+  font-size: 10pt;
+  color: white;
+  z-index: 1500;
+
+  /* IMPORTANT: allow scroll inside panel */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+
