@@ -1,16 +1,25 @@
 // index-view.js
-// Standalone Index orbit page using LOCAL images (no Sanity)
+// Standalone Index orbit page using LOCAL images (thumb + full)
 
 // ------------- IMPORT LOCAL LIST -------------
 import { localPatternImages } from "./pattern-images.js";
 
-// Limit how many images we use in the orbit (helps a LOT)
-const isMobile = window.matchMedia("(max-width: 768px)").matches;
-const MAX_IMAGES = isMobile ? 60 : 120;   // tweak numbers if you want
+// Shuffle a copy so order feels random each load
+let patternSources = [...localPatternImages].sort(() => Math.random() - 0.5);
 
-let patternSources = [...localPatternImages]
-  .sort(() => 0.5 - Math.random())
-  .slice(0, MAX_IMAGES);
+// 🔧 TUNING CONSTANTS (you can tweak these)
+// Smaller thumbs = faster load / less decode cost
+const THUMB_MAX_DIM_DESKTOP = 60;
+const THUMB_MAX_DIM_MOBILE  = 45;
+
+// Full-image max size for zoom
+const MAX_FULL_DIM_DESKTOP = 900;
+const MAX_FULL_DIM_MOBILE  = 700;
+
+// Concurrency: more = faster loading, but more bursty
+const MAX_CONCURRENT_DESKTOP = 1;
+const MAX_CONCURRENT_MOBILE  = 1;
+
 // p5 instance
 let patternSketch = null;
 
@@ -28,15 +37,21 @@ function initPatternOrbitView() {
     return;
   }
 
-  // You can tweak these to taste
+  const isMobileScreen = window.innerWidth < 768;
+  const THUMB_MAX_DIM = isMobileScreen ? THUMB_MAX_DIM_MOBILE : THUMB_MAX_DIM_DESKTOP;
+  const MAX_FULL_DIM  = isMobileScreen ? MAX_FULL_DIM_MOBILE  : MAX_FULL_DIM_DESKTOP;
+  const MAX_CONCURRENT_LOADS = isMobileScreen
+    ? MAX_CONCURRENT_MOBILE
+    : MAX_CONCURRENT_DESKTOP;
+
+  // Orbit parameters (same vibe as before, tweak if you like)
   let xPatternValue = 8;
   let yPatternValue = 8;
   let radiusX = 0.45;
   let radiusY = 0.43;
 
-  patternSketch = new p5(p => {
-    let imgs = [];
-    let fullResImgs = [];
+  patternSketch = new p5((p) => {
+    let imgs = [];             // thumb images
     let offset = 0;
     let mouseXPos = 0;
     let mouseYPos = 0;
@@ -44,57 +59,59 @@ function initPatternOrbitView() {
     let selectedImage = null;
     let loadingFullRes = false;
     let appearStartTimes = [];
+    let modalImg = null;       // only ONE full-res in memory
 
     p.setup = () => {
       const w = wrap.offsetWidth || window.innerWidth;
       const h = wrap.offsetHeight || window.innerHeight;
       p.createCanvas(w, h).parent(wrap);
-      p.frameRate(30);
+
+      // lower frame rate + no smoothing = less CPU/GPU
+      p.frameRate(20);
       p.pixelDensity(1);
+      p.noSmooth();
 
       const n = patternSources.length;
       imgs = new Array(n).fill(null);
-      fullResImgs = new Array(n).fill(null);
       hoverScales = new Array(n).fill(1.0);
       appearStartTimes = new Array(n).fill(null);
 
       let nextIndexToLoad = 0;
       let currentlyLoading = 0;
-      const maxConcurrentLoads = 4;
 
       function kickOffLoads() {
-        while (currentlyLoading < maxConcurrentLoads && nextIndexToLoad < n) {
+        while (currentlyLoading < MAX_CONCURRENT_LOADS && nextIndexToLoad < n) {
           const i = nextIndexToLoad++;
-          const imgPath = patternSources[i];   // e.g. "pattern-images/032cHEELS2.webp"
-          if (!imgPath) continue;
+          const srcObj = patternSources[i];
+          if (!srcObj || !srcObj.thumb) continue;
 
+          const thumbUrl = srcObj.thumb;
           currentlyLoading++;
 
           p.loadImage(
-            imgPath,
-            loadedImg => {
-              // downscale thumbs a bit so we’re not drawing huge files
-// smaller thumbs = faster draw & less memory
-const maxDim = (window.innerWidth || w) < 700 ? 70 : 80;
-
-if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
-  const ratio = Math.min(
-    maxDim / loadedImg.width,
-    maxDim / loadedImg.height
-  );
-  loadedImg.resize(
-    loadedImg.width * ratio,
-    loadedImg.height * ratio
-  );
-}
-
+            thumbUrl,
+            (loadedImg) => {
+              // 🔧 keep thumbs tiny in memory
+              if (
+                loadedImg.width > THUMB_MAX_DIM ||
+                loadedImg.height > THUMB_MAX_DIM
+              ) {
+                const ratio = Math.min(
+                  THUMB_MAX_DIM / loadedImg.width,
+                  THUMB_MAX_DIM / loadedImg.height
+                );
+                loadedImg.resize(
+                  loadedImg.width * ratio,
+                  loadedImg.height * ratio
+                );
+              }
               imgs[i] = loadedImg;
               appearStartTimes[i] = p.millis();
               currentlyLoading--;
               kickOffLoads();
             },
             () => {
-              console.log("Failed to load thumb:", imgPath);
+              console.log("Failed to load thumb:", thumbUrl);
               currentlyLoading--;
               kickOffLoads();
             }
@@ -102,6 +119,7 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
         }
       }
 
+      // start loading thumbs
       kickOffLoads();
     };
 
@@ -121,6 +139,7 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
       if (selectedImage !== null) {
         selectedImage = null;
         loadingFullRes = false;
+        modalImg = null;
         return;
       }
 
@@ -139,15 +158,15 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
           Math.sin((pos * yPatternValue * Math.PI) / patternSources.length) *
             (p.height * radiusY);
 
-        const maxSize = 80;
+        const maxSize = isMobileScreen ? 26 : 50;
         const ratio = Math.min(maxSize / img.width, maxSize / img.height);
         const baseW = img.width * ratio;
         const baseH = img.height * ratio;
 
         const hoverScale = hoverScales[i] || 1;
         const appear = 1;
-        const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
-        const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
+        const w = baseW * (0.8 + 0.2 * appear) * hoverScales[i];
+        const h = baseH * (0.8 + 0.2 * appear) * hoverScales[i];
 
         const dx = p.mouseX - x;
         const dy = p.mouseY - y;
@@ -155,24 +174,38 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
 
         if (dx * dx + dy * dy <= radius * radius) {
           selectedImage = i;
+          modalImg = null;
 
-          if (!fullResImgs[i]) {
-            const fullUrl = patternSources[i];   // same local file as thumb
-            if (!fullUrl) continue;
+          const srcObj = patternSources[i];
+          const fullUrl = (srcObj && srcObj.full) || srcObj.thumb;
+          if (!fullUrl) break;
 
-            loadingFullRes = true;
-            p.loadImage(
-              fullUrl,
-              loadedImg => {
-                fullResImgs[i] = loadedImg;
-                loadingFullRes = false;
-              },
-              () => {
-                console.log("Failed to load full:", fullUrl);
-                loadingFullRes = false;
+          loadingFullRes = true;
+          p.loadImage(
+            fullUrl,
+            (loadedImg) => {
+              // 🔧 cap zoom resolution
+              if (
+                loadedImg.width > MAX_FULL_DIM ||
+                loadedImg.height > MAX_FULL_DIM
+              ) {
+                const ratio = Math.min(
+                  MAX_FULL_DIM / loadedImg.width,
+                  MAX_FULL_DIM / loadedImg.height
+                );
+                loadedImg.resize(
+                  loadedImg.width * ratio,
+                  loadedImg.height * ratio
+                );
               }
-            );
-          }
+              modalImg = loadedImg;
+              loadingFullRes = false;
+            },
+            () => {
+              console.log("Failed to load full:", fullUrl);
+              loadingFullRes = false;
+            }
+          );
           break;
         }
       }
@@ -189,26 +222,41 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
       } else if (p.keyCode === p.ESCAPE) {
         selectedImage = null;
         loadingFullRes = false;
+        modalImg = null;
         return;
       }
 
-      if (selectedImage !== null && !fullResImgs[selectedImage]) {
-        loadingFullRes = true;
-        const fullUrl = patternSources[selectedImage];
-        if (!fullUrl) return;
+      // when arrowing, load the new full-res
+      const srcObj = patternSources[selectedImage];
+      const fullUrl = (srcObj && srcObj.full) || srcObj.thumb;
+      if (!fullUrl) return;
 
-        p.loadImage(
-          fullUrl,
-          loadedImg => {
-            fullResImgs[selectedImage] = loadedImg;
-            loadingFullRes = false;
-          },
-          () => {
-            console.log("Failed to load full res:", fullUrl);
-            loadingFullRes = false;
+      loadingFullRes = true;
+      modalImg = null;
+      p.loadImage(
+        fullUrl,
+        (loadedImg) => {
+          if (
+            loadedImg.width > MAX_FULL_DIM ||
+            loadedImg.height > MAX_FULL_DIM
+          ) {
+            const ratio = Math.min(
+              MAX_FULL_DIM / loadedImg.width,
+              MAX_FULL_DIM / loadedImg.height
+            );
+            loadedImg.resize(
+              loadedImg.width * ratio,
+              loadedImg.height * ratio
+            );
           }
-        );
-      }
+          modalImg = loadedImg;
+          loadingFullRes = false;
+        },
+        () => {
+          console.log("Failed to load full res:", fullUrl);
+          loadingFullRes = false;
+        }
+      );
     };
 
     p.draw = () => {
@@ -230,9 +278,8 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
       const now = p.millis();
       let anyHovering = false;
 
-      const isMobile = p.width < 700;
-      const orbitScale = isMobile ? 0.9 : 1.0;
-      const maxSizeBase = isMobile ? 30 : 80;
+      const orbitScale = isMobileCanvas ? 0.9 : 1.0;
+      const maxSizeBase = isMobileCanvas ? 22 : 50;
 
       for (let i = 0; i < patternSources.length; i++) {
         const img = imgs[i];
@@ -270,7 +317,7 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
           mouseYPos > y - baseH / 2 &&
           mouseYPos < y + baseH / 2;
 
-        const hoverTargetScale = isHoveringNow ? 1.3 : 1.0;
+        const hoverTargetScale = isHoveringNow ? 1.25 : 1.0;
         hoverScales[i] += (hoverTargetScale - hoverScales[i]) * 0.5;
 
         const w = baseW * (0.8 + 0.2 * appear) * hoverScales[i];
@@ -288,7 +335,7 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
 
       // modal full-screen image
       if (selectedImage !== null) {
-        const img = fullResImgs[selectedImage] || imgs[selectedImage];
+        const img = modalImg || imgs[selectedImage];
         if (!img) {
           p.fill(0);
           p.textAlign(p.CENTER, p.CENTER);
@@ -302,7 +349,7 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
         const modalW = img.width * ratio;
         const modalH = img.height * ratio;
 
-        if (loadingFullRes || !fullResImgs[selectedImage]) {
+        if (loadingFullRes || !modalImg) {
           p.drawingContext.filter = "blur(8px)";
           p.imageMode(p.CENTER);
           p.image(img, p.width / 2, p.height / 2, modalW, modalH);
@@ -313,13 +360,7 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
           p.text("Loading...", p.width / 2, p.height / 2);
         } else {
           p.imageMode(p.CENTER);
-          p.image(
-            fullResImgs[selectedImage],
-            p.width / 2,
-            p.height / 2,
-            modalW,
-            modalH
-          );
+          p.image(modalImg, p.width / 2, p.height / 2, modalW, modalH);
         }
       }
     };
@@ -329,16 +370,16 @@ if (loadedImg.width > maxDim || loadedImg.height > maxDim) {
 // ------------- BOOT -------------
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 1) Info toggle on Index page
-  const infoBtn   = document.getElementById("InfoButton");
+  // Info toggle for Index page (same behavior as home)
+  const infoBtn = document.getElementById("InfoButton");
   const infoPanel = document.getElementById("InfoContent");
 
   if (infoBtn && infoPanel) {
     infoBtn.addEventListener("click", (e) => {
-      // defensive: if it ever becomes an <a>, stop default navigation
       e.preventDefault?.();
       infoPanel.classList.toggle("active");
     });
   }
-    initPatternOrbitView();
+
+  initPatternOrbitView();
 });
