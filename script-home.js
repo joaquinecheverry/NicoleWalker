@@ -26,51 +26,32 @@ if (infoButton && infoPanel) {
   });
 }
 
-// Clicking "Nicole Walker" just scrolls to top of gallery
-if (titleEl) {
-  titleEl.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+// Clicking "Nicole Walker" = scroll to top on HOME
+if (titleEl && document.body.classList.contains("home-page")) {
+  titleEl.addEventListener("click", (e) => {
+    // prevent any default if this is not a real link
+    if (titleEl.tagName !== "A") {
+      e.preventDefault?.();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   });
 }
 
+
 // -----------------------------
-// GLOBALS FOR HORIZONTAL AUTO-SCROLL
+// HORIZONTAL AUTO-SCROLL HINT
 // -----------------------------
+
+// SAME LOGIC as before, but scroll is throttled with rAF for smoothness
 let autoScrollRows = [];
 const autoScrollState = new WeakMap(); // row -> { amplitude }
+let scrollRafId = null;
 
-// On scroll, recompute positions (simple + robust)
-window.addEventListener("scroll", updateAutoScrollFromScroll, { passive: true });
-
-// On resize, re-measure and re-apply
-window.addEventListener("resize", () => {
-  setupAutoScrollHints();
-  updateAutoScrollFromScroll();
-});
-
-
-
-// Update horizontal positions when page scrolls
-
-
-/**
- * Initialize per-row auto-scroll state AFTER projects are rendered.
- * Called at the end of renderProjects().
- */
 function setupAutoScrollHints() {
-  const allRows = Array.from(
-    document.querySelectorAll(".project.has-multiple")
-  );
+  const rows = Array.from(document.querySelectorAll(".project.has-multiple"));
 
-  if (!allRows.length) {
-    autoScrollRows = [];
-    return;
-  }
-
-  autoScrollRows = allRows;
-
-  // Clear old state
-  autoScrollRows.forEach((row) => autoScrollState.delete(row));
+  autoScrollRows = rows;
+  if (!autoScrollRows.length) return;
 
   autoScrollRows.forEach((row) => {
     const maxScroll = row.scrollWidth - row.clientWidth;
@@ -88,11 +69,11 @@ function setupAutoScrollHints() {
       amplitude = maxScroll;
     } else {
       if (isMobile) {
-        // MOBILE: subtle hint
+        // MOBILE: subtle hint (shorter travel)
         const factor = 0.25 + Math.random() * 0.2; // 0.25–0.45
         amplitude = Math.min(maxScroll * factor, 70);
       } else {
-        // DESKTOP: noticeable but not too much
+        // DESKTOP: a bit stronger
         const factor = 0.45 + Math.random() * 0.25; // 0.45–0.70
         amplitude = Math.min(maxScroll * factor, 350);
       }
@@ -100,39 +81,26 @@ function setupAutoScrollHints() {
 
     autoScrollState.set(row, { amplitude });
 
-    // Always start at left edge on (re)build
+    // always start aligned left on rebuild
     row.scrollLeft = 0;
   });
 
-  // Position them based on current scroll immediately
+  // initial positioning based on current scroll (often 0 at top)
   updateAutoScrollFromScroll();
 }
 
-
-
-
-
-
-
-/**
- * Link each row's vertical position in the viewport -> its horizontal offset.
- * - When a row's center is near the middle of the screen, it scrolls most.
- * - When it's near the top/bottom or off-screen, it goes back toward the left.
- * - Each row uses its own amplitude, so they don't all move the same amount.
- */
 function updateAutoScrollFromScroll() {
   if (!autoScrollRows.length) return;
 
   const scrollY = window.scrollY || window.pageYOffset || 0;
 
-  const TOP_LOCK = 40; // dead zone at very top
+  const TOP_LOCK = 40; // small dead zone at top so first view is clean
+
   const vh = window.innerHeight || document.documentElement.clientHeight;
+  const focusY = vh * 0.35; // band slightly above center
+  const maxDist = vh;       // how wide the band of influence is
 
-  // focus band a bit above center
-  const focusY = vh * 0.35;
-  const maxDist = vh; // how wide the band of influence is
-
-  // GLOBAL RAMP: fade the effect in over the first ~300px
+  // Global ramp: fade the effect in over the first ~300px of scroll
   const RAMP_RANGE = 300;
   let global = (scrollY - TOP_LOCK) / RAMP_RANGE;
   if (global < 0) global = 0;
@@ -143,7 +111,7 @@ function updateAutoScrollFromScroll() {
     if (!state) return;
 
     if (scrollY < TOP_LOCK) {
-      // At the top: everything perfectly aligned
+      // At the very top → no peek
       row.scrollLeft = 0;
       return;
     }
@@ -151,13 +119,11 @@ function updateAutoScrollFromScroll() {
     const rect = row.getBoundingClientRect();
     const rowCenter = rect.top + rect.height / 2;
 
-    const dist = Math.abs(rowCenter - focusY);
-
-    // local 0–1 based on distance from focus band
-    let t = 1 - dist / maxDist;
+    // local 0–1 based on how close the row is to the focus band
+    let t = 1 - Math.abs(rowCenter - focusY) / maxDist;
     if (t < 0) t = 0;
 
-    // smoothstep easing
+    // smoothstep easing → less jumpy
     t = t * t * (3 - 2 * t);
 
     const strength = global * t;
@@ -167,10 +133,68 @@ function updateAutoScrollFromScroll() {
   });
 }
 
+// rAF-throttled scroll handler (same behavior, smoother)
+function onScroll() {
+  if (scrollRafId !== null) return;
+  scrollRafId = requestAnimationFrame(() => {
+    scrollRafId = null;
+    updateAutoScrollFromScroll();
+  });
+}
+
+// Hook scroll + resize
+window.addEventListener("scroll", onScroll, { passive: true });
+window.addEventListener("resize", () => {
+  setProjectHeights();
+  setupAutoScrollHints();
+});
+
+// Also re-run hints when the page is shown again (covers some bfcache cases)
+window.addEventListener("pageshow", () => {
+  setupAutoScrollHints();
+  updateAutoScrollFromScroll();
+});
 
 
+// -----------------------------
+// MOBILE VIDEO AUTOPLAY ON SCROLL
+// -----------------------------
 
+let videoObserver = null;
 
+function setupVideoAutoplay() {
+  // clear previous observer
+  if (videoObserver) {
+    videoObserver.disconnect();
+    videoObserver = null;
+  }
+
+  const videos = Array.from(document.querySelectorAll(".project-item video"));
+  if (!videos.length) return;
+
+  const mqHoverDesktop = window.matchMedia("(hover: hover) && (pointer: fine)");
+
+  // Autoplay-on-scroll only for touch devices; desktop keeps hover behavior
+  if (mqHoverDesktop.matches) return;
+
+  videoObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const video = entry.target;
+        if (entry.isIntersecting && entry.intersectionRatio > 0.35) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      });
+    },
+    {
+      threshold: [0.1, 0.35, 0.7],
+    }
+  );
+
+  videos.forEach((video) => videoObserver.observe(video));
+}
 
 // -----------------------------
 // RENDER GALLERY ROWS
@@ -206,15 +230,13 @@ function renderProjects(projects) {
         const video = document.createElement("video");
         video.src = rawSrc;
         video.loop = true;
-
-        // 🔇 always muted, no audio
-        video.muted = true;
+        video.muted = true;   // no audio
         video.volume = 0;
-
         video.playsInline = true;
-        video.preload = "metadata";
-        video.controls = false;   // no native UI
+        video.preload = "auto";   // 🔹 ensure thumbnail / first frame loads
+        video.controls = false;   // no native controls
 
+        // hover / tap behavior (same as before)
         const play = () => {
           if (video.paused) {
             video.play().catch((err) =>
@@ -222,7 +244,6 @@ function renderProjects(projects) {
             );
           }
         };
-
         const pause = () => {
           if (!video.paused) {
             video.pause();
@@ -234,12 +255,9 @@ function renderProjects(projects) {
         );
 
         if (mqHoverDesktop.matches) {
-          // 🖱️ DESKTOP: play on hover, pause on leave
           video.addEventListener("mouseenter", play);
           video.addEventListener("mouseleave", pause);
         } else {
-          // 📱 MOBILE / TOUCH: tap to toggle play/pause
-          // also try to ignore horizontal swipe/scroll vs tap
           let startX = null;
           let startY = null;
           let moved = false;
@@ -263,7 +281,7 @@ function renderProjects(projects) {
               const dx = t.clientX - startX;
               const dy = t.clientY - startY;
               if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                moved = true; // treat as scroll/drag, not tap
+                moved = true;
               }
             },
             { passive: true }
@@ -273,22 +291,17 @@ function renderProjects(projects) {
             "touchend",
             (e) => {
               if (moved) {
-                // user was scrolling, don't toggle play
                 startX = startY = null;
                 return;
               }
               e.preventDefault();
-              if (video.paused) {
-                play();
-              } else {
-                pause();
-              }
+              if (video.paused) play();
+              else pause();
               startX = startY = null;
             },
             { passive: false }
           );
 
-          // Fallback for some touch devices / emulators:
           video.addEventListener("click", () => {
             if (video.paused) play();
             else pause();
@@ -297,11 +310,10 @@ function renderProjects(projects) {
 
         el = video;
       } else {
-
         const img = document.createElement("img");
         const sep = rawSrc.includes("?") ? "&" : "?";
 
-        // slightly reduced width + quality for bandwidth
+        // bandwidth-friendly sizing
         const targetW = isMobile ? 500 : 1500;
         img.src = `${rawSrc}${sep}w=${targetW}&auto=format&q=65`;
         img.loading = "lazy";
@@ -316,9 +328,10 @@ function renderProjects(projects) {
     projectEl.appendChild(track);
 
     const mediaCount = (project.media || []).length;
+
+    // horizontal scroll only if there's overflow
     projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
 
-    // mark projects that actually have horizontal content
     if (mediaCount > 1) {
       projectEl.classList.add("has-multiple");
     }
@@ -326,13 +339,17 @@ function renderProjects(projects) {
     main.appendChild(projectEl);
   });
 
-  // compute heights
+  // match each row's height to first media
   setProjectHeights();
-  setTimeout(setProjectHeights, 200); // iOS Safari safety
+  setTimeout(setProjectHeights, 200); // safety for slow loads
 
-  // set up interactive auto-scroll on multi-image rows
+  // and (re)build auto-scroll hints for these rows
   setupAutoScrollHints();
+
+  // mobile video autoplay-on-scroll
+  setupVideoAutoplay();
 }
+
 
 // -----------------------------
 // MATCH ROW HEIGHT TO FIRST IMAGE
@@ -340,7 +357,7 @@ function renderProjects(projects) {
 function setProjectHeights() {
   const projects = document.querySelectorAll(".project");
 
-  projects.forEach(projectEl => {
+  projects.forEach((projectEl) => {
     const firstMedia = projectEl.querySelector(
       ".project-item:first-child img, .project-item:first-child video"
     );
@@ -367,12 +384,23 @@ function setProjectHeights() {
     }
 
     if (firstMedia.tagName === "IMG") {
-      if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
-        applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
+      if (
+        firstMedia.complete &&
+        firstMedia.naturalWidth &&
+        firstMedia.naturalHeight
+      ) {
+        applyHeightFromDimensions(
+          firstMedia.naturalWidth,
+          firstMedia.naturalHeight
+        );
       } else {
         firstMedia.addEventListener(
           "load",
-          () => applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight),
+          () =>
+            applyHeightFromDimensions(
+              firstMedia.naturalWidth,
+              firstMedia.naturalHeight
+            ),
           { once: true }
         );
       }
@@ -383,7 +411,8 @@ function setProjectHeights() {
       } else {
         video.addEventListener(
           "loadedmetadata",
-          () => applyHeightFromDimensions(video.videoWidth, video.videoHeight),
+          () =>
+            applyHeightFromDimensions(video.videoWidth, video.videoHeight),
           { once: true }
         );
       }
@@ -393,11 +422,12 @@ function setProjectHeights() {
 
 window.addEventListener("resize", setProjectHeights);
 
+
 // -----------------------------
 // LOAD PROJECTS FROM SANITY
 // -----------------------------
 async function loadProjectsFromSanity() {
-  const projectId  = "hk21ncs5";       // your project id
+  const projectId  = "hk21ncs5";
   const dataset    = "production";
   const apiVersion = "2023-05-03";
 
@@ -426,7 +456,7 @@ async function loadProjectsFromSanity() {
     const data = await res.json();
     const collections = data.result || [];
 
-    const projects = collections.map(col => ({
+    const projects = collections.map((col) => ({
       type: "mixed",
       media: col.media || []
     }));
@@ -439,17 +469,5 @@ async function loadProjectsFromSanity() {
   }
 }
 
-// When coming back from the Index page (via back/forward cache),
-// When we come back from the Index page via back/forward cache,
-// the JS doesn't re-run automatically. Force a fresh gallery render
-// so auto-scroll + video hover/tap re-initialize correctly.
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) {
-    // Re-fetch + re-render projects from Sanity
-    loadProjectsFromSanity();
-  }
-});
-
-
-// kick it off
+// kick it off on initial load
 loadProjectsFromSanity();
