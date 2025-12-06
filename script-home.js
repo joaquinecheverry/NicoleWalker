@@ -39,19 +39,34 @@ if (titleEl) {
 let autoScrollRows = [];
 const autoScrollState = new WeakMap(); // row -> { amplitude }
 
-// On scroll, recompute positions (simple + robust)
-window.addEventListener("scroll", updateAutoScrollFromScroll, { passive: true });
+// rAF throttle for smoother horizontal motion on fast vertical scroll
+let lastKnownScrollY = 0;
+let scrollTicking = false;
 
-// On resize, re-measure and re-apply
-window.addEventListener("resize", () => {
-  setupAutoScrollHints();
-  updateAutoScrollFromScroll();
-});
+window.addEventListener(
+  "scroll",
+  () => {
+    lastKnownScrollY = window.scrollY || window.pageYOffset || 0;
+
+    if (!scrollTicking) {
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        updateAutoScrollFromScroll(lastKnownScrollY);
+        scrollTicking = false;
+      });
+    }
+  },
+  { passive: true }
+);
+
+// ⛔️ IMPORTANT:
+// We do NOT call setupAutoScrollHints() on resize anymore,
+// so Safari's URL bar show/hide doesn't wipe per-row state.
 
 
-
-// Update horizontal positions when page scrolls
-
+// -----------------------------
+// AUTO-SCROLL SETUP
+// -----------------------------
 
 /**
  * Initialize per-row auto-scroll state AFTER projects are rendered.
@@ -67,9 +82,10 @@ function setupAutoScrollHints() {
     return;
   }
 
+  // Use ALL multi-image rows (including the first one)
   autoScrollRows = allRows;
 
-  // Clear old state
+  // Clear any previous state
   autoScrollRows.forEach((row) => autoScrollState.delete(row));
 
   autoScrollRows.forEach((row) => {
@@ -88,7 +104,7 @@ function setupAutoScrollHints() {
       amplitude = maxScroll;
     } else {
       if (isMobile) {
-        // MOBILE: subtle hint
+        // MOBILE: very subtle hint
         const factor = 0.25 + Math.random() * 0.2; // 0.25–0.45
         amplitude = Math.min(maxScroll * factor, 70);
       } else {
@@ -98,21 +114,45 @@ function setupAutoScrollHints() {
       }
     }
 
-    autoScrollState.set(row, { amplitude });
+    // Track our own last auto scroll position so we can detect user overrides
+    const state = {
+      amplitude,
+      disabled: false,
+      lastAutoScrollLeft: 0,
+      isAutoUpdating: false,   // track when we are moving it via JS
+    };
+    autoScrollState.set(row, state);
 
-    // Always start at left edge on (re)build
+    // start everything at the left edge
     row.scrollLeft = 0;
+
+    // ✅ Any scroll that diverges from lastAutoScrollLeft by a bit = user input
+    row.addEventListener(
+      "scroll",
+      () => {
+        const s = autoScrollState.get(row);
+        if (!s || s.disabled) return;
+
+        // If WE are the ones updating scrollLeft, ignore this event
+        if (s.isAutoUpdating) return;
+
+        const current = row.scrollLeft;
+        const diff = Math.abs(current - (s.lastAutoScrollLeft ?? 0));
+
+        // Only real user movement (away from our last auto value)
+        // should freeze auto-scroll for this row.
+        if (diff > 5) {
+          s.disabled = true;
+          autoScrollState.set(row, s);
+        }
+      },
+      { passive: true }
+    );
   });
 
-  // Position them based on current scroll immediately
+  // apply initial positions based on current scroll (will be 0 at top)
   updateAutoScrollFromScroll();
 }
-
-
-
-
-
-
 
 /**
  * Link each row's vertical position in the viewport -> its horizontal offset.
@@ -120,19 +160,38 @@ function setupAutoScrollHints() {
  * - When it's near the top/bottom or off-screen, it goes back toward the left.
  * - Each row uses its own amplitude, so they don't all move the same amount.
  */
-function updateAutoScrollFromScroll() {
+function updateAutoScrollFromScroll(passedScrollY) {
   if (!autoScrollRows.length) return;
 
-  const scrollY = window.scrollY || window.pageYOffset || 0;
+  const scrollY =
+    typeof passedScrollY === "number"
+      ? passedScrollY
+      : (window.scrollY || window.pageYOffset || 0);
 
   const TOP_LOCK = 40; // dead zone at very top
+  if (scrollY < TOP_LOCK) {
+    autoScrollRows.forEach((row) => {
+      const state = autoScrollState.get(row);
+      if (!state || state.disabled) return;
+
+      state.isAutoUpdating = true;       //  mark as auto
+      row.scrollLeft = 0;
+      state.lastAutoScrollLeft = 0;
+      state.isAutoUpdating = false;      // done
+      autoScrollState.set(row, state);
+    });
+    return;
+  }
+
   const vh = window.innerHeight || document.documentElement.clientHeight;
 
   // focus band a bit above center
   const focusY = vh * 0.35;
-  const maxDist = vh; // how wide the band of influence is
 
-  // GLOBAL RAMP: fade the effect in over the first ~300px
+  // how wide the band of influence is
+  const maxDist = vh; // slightly wider band → slower change
+
+  // GLOBAL RAMP:
   const RAMP_RANGE = 300;
   let global = (scrollY - TOP_LOCK) / RAMP_RANGE;
   if (global < 0) global = 0;
@@ -140,13 +199,7 @@ function updateAutoScrollFromScroll() {
 
   autoScrollRows.forEach((row) => {
     const state = autoScrollState.get(row);
-    if (!state) return;
-
-    if (scrollY < TOP_LOCK) {
-      // At the top: everything perfectly aligned
-      row.scrollLeft = 0;
-      return;
-    }
+    if (!state || state.disabled) return; // 🔒 don't touch user-overridden rows
 
     const rect = row.getBoundingClientRect();
     const rowCenter = rect.top + rect.height / 2;
@@ -157,19 +210,23 @@ function updateAutoScrollFromScroll() {
     let t = 1 - dist / maxDist;
     if (t < 0) t = 0;
 
-    // smoothstep easing
+    // smoother easing (smoothstep)
     t = t * t * (3 - 2 * t);
 
+    // final strength = global ramp * local band
     const strength = global * t;
+
     const target = state.amplitude * strength;
 
+    // Mark this as our own programmatic scroll so the `scroll` listener
+    // doesn't treat it as user input.
+    state.isAutoUpdating = true;
     row.scrollLeft = target;
+    state.lastAutoScrollLeft = target;
+    state.isAutoUpdating = false;
+    autoScrollState.set(row, state);
   });
 }
-
-
-
-
 
 
 // -----------------------------
@@ -187,6 +244,9 @@ function renderProjects(projects) {
     track.classList.add("project-track");
 
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const mqHoverDesktop = window.matchMedia(
+      "(hover: hover) and (pointer: fine)"
+    );
 
     (project.media || []).forEach((item) => {
       const rawSrc = typeof item === "string" ? item : item.url;
@@ -201,103 +261,32 @@ function renderProjects(projects) {
       cell.classList.add("project-item");
 
       let el;
+if (type === "video") {
+  el = document.createElement("video");
+  el.src = rawSrc;
+  el.loop = true;
+  el.muted = true;
+  el.playsInline = true;
 
-      if (type === "video") {
-        const video = document.createElement("video");
-        video.src = rawSrc;
-        video.loop = true;
+  // Save bandwidth: only load metadata initially
+  el.preload = "metadata";
 
-        // 🔇 always muted, no audio
-        video.muted = true;
-        video.volume = 0;
+  // OPTION A: show native controls (easiest + most reliable)
+  el.controls = true;
 
-        video.playsInline = true;
-        video.preload = "metadata";
-        video.controls = false;   // no native UI
-
-        const play = () => {
-          if (video.paused) {
-            video.play().catch((err) =>
-              console.warn("Video play failed:", err)
-            );
-          }
-        };
-
-        const pause = () => {
-          if (!video.paused) {
-            video.pause();
-          }
-        };
-
-        const mqHoverDesktop = window.matchMedia(
-          "(hover: hover) and (pointer: fine)"
-        );
-
-        if (mqHoverDesktop.matches) {
-          // 🖱️ DESKTOP: play on hover, pause on leave
-          video.addEventListener("mouseenter", play);
-          video.addEventListener("mouseleave", pause);
-        } else {
-          // 📱 MOBILE / TOUCH: tap to toggle play/pause
-          // also try to ignore horizontal swipe/scroll vs tap
-          let startX = null;
-          let startY = null;
-          let moved = false;
-
-          video.addEventListener(
-            "touchstart",
-            (e) => {
-              const t = e.touches[0];
-              startX = t.clientX;
-              startY = t.clientY;
-              moved = false;
-            },
-            { passive: true }
-          );
-
-          video.addEventListener(
-            "touchmove",
-            (e) => {
-              if (startX == null || startY == null) return;
-              const t = e.touches[0];
-              const dx = t.clientX - startX;
-              const dy = t.clientY - startY;
-              if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                moved = true; // treat as scroll/drag, not tap
-              }
-            },
-            { passive: true }
-          );
-
-          video.addEventListener(
-            "touchend",
-            (e) => {
-              if (moved) {
-                // user was scrolling, don't toggle play
-                startX = startY = null;
-                return;
-              }
-              e.preventDefault();
-              if (video.paused) {
-                play();
-              } else {
-                pause();
-              }
-              startX = startY = null;
-            },
-            { passive: false }
-          );
-
-          // Fallback for some touch devices / emulators:
-          video.addEventListener("click", () => {
-            if (video.paused) play();
-            else pause();
-          });
-        }
-
-        el = video;
-      } else {
-
+  // OPTIONAL: also allow tap-to-toggle play/pause on the video itself
+  el.addEventListener("click", () => {
+    // A tap is a real user gesture, so iOS/Android allow play()
+    if (el.paused) {
+      el.play().catch((err) => {
+        console.warn("Video play failed:", err);
+      });
+    } else {
+      el.pause();
+    }
+  });
+}
+ else {
         const img = document.createElement("img");
         const sep = rawSrc.includes("?") ? "&" : "?";
 
@@ -440,7 +429,6 @@ async function loadProjectsFromSanity() {
 }
 
 // When coming back from the Index page (via back/forward cache),
-// When we come back from the Index page via back/forward cache,
 // the JS doesn't re-run automatically. Force a fresh gallery render
 // so auto-scroll + video hover/tap re-initialize correctly.
 window.addEventListener("pageshow", (event) => {
@@ -449,7 +437,6 @@ window.addEventListener("pageshow", (event) => {
     loadProjectsFromSanity();
   }
 });
-
 
 // kick it off
 loadProjectsFromSanity();
