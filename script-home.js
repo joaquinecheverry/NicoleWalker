@@ -244,6 +244,9 @@ function renderProjects(projects) {
     track.classList.add("project-track");
 
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const mqHoverDesktop = window.matchMedia(
+      "(hover: hover) and (pointer: fine)"
+    );
 
     (project.media || []).forEach((item) => {
       const rawSrc = typeof item === "string" ? item : item.url;
@@ -267,6 +270,7 @@ function renderProjects(projects) {
         // 🔇 always muted, no audio
         video.muted = true;
         video.volume = 0;
+        video.setAttribute("muted", "");           // important for iOS
 
         // inline playback on iOS
         video.playsInline = true;
@@ -277,6 +281,24 @@ function renderProjects(projects) {
         video.preload = "auto";
 
         video.controls = false;   // no native UI
+
+        // 👇 NEW: force Safari to decode & paint a frame once data is ready
+        if (!mqHoverDesktop.matches) {
+          video.addEventListener(
+            "loadeddata",
+            () => {
+              try {
+                // Nudge currentTime slightly so iOS draws a frame
+                if (video.currentTime === 0) {
+                  video.currentTime = 0.01;
+                }
+              } catch (e) {
+                // ignore if it complains
+              }
+            },
+            { once: true }
+          );
+        }
 
         const play = () => {
           if (video.paused) {
@@ -291,10 +313,6 @@ function renderProjects(projects) {
             video.pause();
           }
         };
-
-        const mqHoverDesktop = window.matchMedia(
-          "(hover: hover) and (pointer: fine)"
-        );
 
         if (mqHoverDesktop.matches) {
           // 🖱️ DESKTOP: play on hover, pause on leave
