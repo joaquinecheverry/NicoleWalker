@@ -37,31 +37,24 @@ if (titleEl) {
 // GLOBALS FOR HORIZONTAL AUTO-SCROLL
 // -----------------------------
 let autoScrollRows = [];
-const autoScrollState = new WeakMap(); // row -> { amplitude }
+const autoScrollState = new WeakMap(); // row -> { amplitude, disabled, lastAutoScrollLeft, isAutoUpdating }
 
-// rAF throttle for smoother horizontal motion on fast vertical scroll
-let lastKnownScrollY = 0;
-let scrollTicking = false;
+// 🔹 NEW: throttle scroll handler with rAF for smoother motion on iOS
+let scrollRafId = null;
+function onScrollThrottled() {
+  if (scrollRafId !== null) return;
+  scrollRafId = requestAnimationFrame(() => {
+    scrollRafId = null;
+    updateAutoScrollFromScroll();
+  });
+}
 
-window.addEventListener(
-  "scroll",
-  () => {
-    lastKnownScrollY = window.scrollY || window.pageYOffset || 0;
-
-    if (!scrollTicking) {
-      scrollTicking = true;
-      requestAnimationFrame(() => {
-        updateAutoScrollFromScroll(lastKnownScrollY);
-        scrollTicking = false;
-      });
-    }
-  },
-  { passive: true }
-);
+// On scroll, recompute positions (simple + robust)
+window.addEventListener("scroll", onScrollThrottled, { passive: true });
 
 // ⛔️ IMPORTANT:
-// We do NOT call setupAutoScrollHints() on resize anymore,
-// so Safari's URL bar show/hide doesn't wipe per-row state.
+// We do *not* rebuild hints on resize here, to avoid Safari URL bar resize
+// wiping per-row state. We still resize heights further down via another listener.
 
 
 // -----------------------------
@@ -160,13 +153,10 @@ function setupAutoScrollHints() {
  * - When it's near the top/bottom or off-screen, it goes back toward the left.
  * - Each row uses its own amplitude, so they don't all move the same amount.
  */
-function updateAutoScrollFromScroll(passedScrollY) {
+function updateAutoScrollFromScroll() {
   if (!autoScrollRows.length) return;
 
-  const scrollY =
-    typeof passedScrollY === "number"
-      ? passedScrollY
-      : (window.scrollY || window.pageYOffset || 0);
+  const scrollY = window.scrollY || window.pageYOffset || 0;
 
   const TOP_LOCK = 40; // dead zone at very top
   if (scrollY < TOP_LOCK) {
@@ -228,6 +218,57 @@ function updateAutoScrollFromScroll(passedScrollY) {
   });
 }
 
+// -----------------------------
+// MOBILE VIDEO AUTOPLAY / THUMBNAILS
+// -----------------------------
+
+// We'll use an IntersectionObserver on mobile to auto-play/pause videos
+// so thumbnails show up and they move as you swipe into the row.
+let videoObserver = null;
+const mqHoverDesktop = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+function setupVideoAutoplay() {
+  // Only care about mobile / touch — desktop already has hover play
+  if (mqHoverDesktop.matches) {
+    if (videoObserver) {
+      videoObserver.disconnect();
+      videoObserver = null;
+    }
+    return;
+  }
+
+  if (videoObserver) {
+    videoObserver.disconnect();
+    videoObserver = null;
+  }
+
+  videoObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const video = entry.target;
+        if (entry.isIntersecting) {
+          // Auto-play when the video is meaningfully on screen.
+          const p = video.play();
+          if (p && p.catch) {
+            p.catch(() => {
+              // ignore autoplay rejections
+            });
+          }
+        } else {
+          video.pause();
+        }
+      });
+    },
+    {
+      threshold: 0.6, // ~60% visible
+    }
+  );
+
+  document.querySelectorAll(".project-item video").forEach((v) => {
+    videoObserver.observe(v);
+  });
+}
+
 
 // -----------------------------
 // RENDER GALLERY ROWS
@@ -268,15 +309,14 @@ function renderProjects(projects) {
         video.muted = true;
         video.volume = 0;
 
-        // inline playback on iOS
+        // Make iOS happy for inline muted autoplay & thumbnails
         video.playsInline = true;
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
-
-        // more eager preload so we actually get a visible first frame on mobile
-        video.preload = "auto";
-
-        video.controls = false;   // no native UI
+        video.setAttribute("muted", "");
+        video.setAttribute("autoplay", "");   // for mobile + observer
+        video.preload = "auto";               // more willing to show a frame
+        video.controls = false;               // no native UI
 
         const play = () => {
           if (video.paused) {
@@ -291,10 +331,6 @@ function renderProjects(projects) {
             video.pause();
           }
         };
-
-        const mqHoverDesktop = window.matchMedia(
-          "(hover: hover) and (pointer: fine)"
-        );
 
         if (mqHoverDesktop.matches) {
           // 🖱️ DESKTOP: play on hover, pause on leave
@@ -394,6 +430,9 @@ function renderProjects(projects) {
 
   // set up interactive auto-scroll on multi-image rows
   setupAutoScrollHints();
+
+  // 🔹 NEW: (re)wire mobile video autoplay/thumbnail behavior
+  setupVideoAutoplay();
 }
 
 // -----------------------------
@@ -506,7 +545,6 @@ async function loadProjectsFromSanity() {
 // so auto-scroll + video hover/tap re-initialize correctly.
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
-    // Re-fetch + re-render projects from Sanity
     loadProjectsFromSanity();
   }
 });
