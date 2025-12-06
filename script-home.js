@@ -261,32 +261,123 @@ function renderProjects(projects) {
       cell.classList.add("project-item");
 
       let el;
-if (type === "video") {
-  el = document.createElement("video");
-  el.src = rawSrc;
-  el.loop = true;
-  el.muted = true;
-  el.playsInline = true;
 
-  // Save bandwidth: only load metadata initially
-  el.preload = "metadata";
+      if (type === "video") {
+        const video = document.createElement("video");
+        video.src = rawSrc;
+        video.loop = true;
 
-  // OPTION A: show native controls (easiest + most reliable)
-  el.controls = true;
+        // 🔇 always muted, no audio
+        video.muted = true;
+        video.volume = 0;
+        video.setAttribute("muted", "");           // important for iOS
 
-  // OPTIONAL: also allow tap-to-toggle play/pause on the video itself
-  el.addEventListener("click", () => {
-    // A tap is a real user gesture, so iOS/Android allow play()
-    if (el.paused) {
-      el.play().catch((err) => {
-        console.warn("Video play failed:", err);
-      });
-    } else {
-      el.pause();
-    }
-  });
-}
- else {
+        // inline playback on iOS
+        video.playsInline = true;
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
+
+        // more eager preload so we actually get a visible first frame on mobile
+        video.preload = "auto";
+
+        video.controls = false;   // no native UI
+
+        // 👇 NEW: force Safari to decode & paint a frame once data is ready
+        if (!mqHoverDesktop.matches) {
+          video.addEventListener(
+            "loadeddata",
+            () => {
+              try {
+                // Nudge currentTime slightly so iOS draws a frame
+                if (video.currentTime === 0) {
+                  video.currentTime = 0.01;
+                }
+              } catch (e) {
+                // ignore if it complains
+              }
+            },
+            { once: true }
+          );
+        }
+
+        const play = () => {
+          if (video.paused) {
+            video.play().catch((err) =>
+              console.warn("Video play failed:", err)
+            );
+          }
+        };
+
+        const pause = () => {
+          if (!video.paused) {
+            video.pause();
+          }
+        };
+
+        if (mqHoverDesktop.matches) {
+          // 🖱️ DESKTOP: play on hover, pause on leave
+          video.addEventListener("mouseenter", play);
+          video.addEventListener("mouseleave", pause);
+        } else {
+          // 📱 MOBILE / TOUCH: tap to toggle play/pause
+          // also try to ignore horizontal swipe/scroll vs tap
+          let startX = null;
+          let startY = null;
+          let moved = false;
+
+          video.addEventListener(
+            "touchstart",
+            (e) => {
+              const t = e.touches[0];
+              startX = t.clientX;
+              startY = t.clientY;
+              moved = false;
+            },
+            { passive: true }
+          );
+
+          video.addEventListener(
+            "touchmove",
+            (e) => {
+              if (startX == null || startY == null) return;
+              const t = e.touches[0];
+              const dx = t.clientX - startX;
+              const dy = t.clientY - startY;
+              if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                moved = true; // treat as scroll/drag, not tap
+              }
+            },
+            { passive: true }
+          );
+
+          video.addEventListener(
+            "touchend",
+            (e) => {
+              if (moved) {
+                // user was scrolling, don't toggle play
+                startX = startY = null;
+                return;
+              }
+              e.preventDefault();
+              if (video.paused) {
+                play();
+              } else {
+                pause();
+              }
+              startX = startY = null;
+            },
+            { passive: false }
+          );
+
+          // Fallback for some touch devices / emulators:
+          video.addEventListener("click", () => {
+            if (video.paused) play();
+            else pause();
+          });
+        }
+
+        el = video;
+      } else {
         const img = document.createElement("img");
         const sep = rawSrc.includes("?") ? "&" : "?";
 
