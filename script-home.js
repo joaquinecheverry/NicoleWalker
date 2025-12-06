@@ -270,7 +270,7 @@ function renderProjects(projects) {
         // 🔇 always muted, no audio
         video.muted = true;
         video.volume = 0;
-        video.setAttribute("muted", "");           // important for iOS
+        video.setAttribute("muted", "");
 
         // inline playback on iOS
         video.playsInline = true;
@@ -281,24 +281,6 @@ function renderProjects(projects) {
         video.preload = "auto";
 
         video.controls = false;   // no native UI
-
-        // 👇 NEW: force Safari to decode & paint a frame once data is ready
-        if (!mqHoverDesktop.matches) {
-          video.addEventListener(
-            "loadeddata",
-            () => {
-              try {
-                // Nudge currentTime slightly so iOS draws a frame
-                if (video.currentTime === 0) {
-                  video.currentTime = 0.01;
-                }
-              } catch (e) {
-                // ignore if it complains
-              }
-            },
-            { once: true }
-          );
-        }
 
         const play = () => {
           if (video.paused) {
@@ -314,13 +296,44 @@ function renderProjects(projects) {
           }
         };
 
+        const mqHoverDesktop = window.matchMedia(
+          "(hover: hover) and (pointer: fine)"
+        );
+
         if (mqHoverDesktop.matches) {
           // 🖱️ DESKTOP: play on hover, pause on leave
           video.addEventListener("mouseenter", play);
           video.addEventListener("mouseleave", pause);
         } else {
-          // 📱 MOBILE / TOUCH: tap to toggle play/pause
-          // also try to ignore horizontal swipe/scroll vs tap
+          // 📱 MOBILE / TOUCH
+
+          // 1️⃣ First: auto-play very briefly once to force a thumbnail frame
+          const showThumbOnce = () => {
+            const p = video.play();
+            if (p && typeof p.then === "function") {
+              p.then(() => {
+                // give it a moment to paint a frame, then pause
+                setTimeout(() => {
+                  try {
+                    video.pause();
+                  } catch (e) {}
+                }, 120);
+              }).catch(() => {
+                // ignore autoplay errors, user tap will still work
+              });
+            } else {
+              // fallback: pause shortly after
+              setTimeout(() => {
+                try {
+                  video.pause();
+                } catch (e) {}
+              }, 120);
+            }
+          };
+
+          video.addEventListener("loadeddata", showThumbOnce, { once: true });
+
+          // 2️⃣ Your existing tap vs scroll logic
           let startX = null;
           let startY = null;
           let moved = false;
@@ -388,6 +401,7 @@ function renderProjects(projects) {
 
         el = img;
       }
+
 
       cell.appendChild(el);
       track.appendChild(cell);
