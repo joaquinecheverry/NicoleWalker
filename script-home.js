@@ -277,8 +277,14 @@ function renderProjects(projects) {
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
 
-        // more eager preload so we actually get a visible first frame on mobile
-        video.preload = "auto";
+        // use the Sanity thumbnail as a poster if available
+        const thumbUrl = item.thumb || null;
+        if (thumbUrl) {
+          video.poster = thumbUrl;
+        }
+
+        // we can go lighter here, metadata is enough now that we have a poster
+        video.preload = "metadata";
 
         video.controls = false;   // no native UI
 
@@ -305,35 +311,7 @@ function renderProjects(projects) {
           video.addEventListener("mouseenter", play);
           video.addEventListener("mouseleave", pause);
         } else {
-          // 📱 MOBILE / TOUCH
-
-          // 1️⃣ First: auto-play very briefly once to force a thumbnail frame
-          const showThumbOnce = () => {
-            const p = video.play();
-            if (p && typeof p.then === "function") {
-              p.then(() => {
-                // give it a moment to paint a frame, then pause
-                setTimeout(() => {
-                  try {
-                    video.pause();
-                  } catch (e) {}
-                }, 120);
-              }).catch(() => {
-                // ignore autoplay errors, user tap will still work
-              });
-            } else {
-              // fallback: pause shortly after
-              setTimeout(() => {
-                try {
-                  video.pause();
-                } catch (e) {}
-              }, 120);
-            }
-          };
-
-          video.addEventListener("loadeddata", showThumbOnce, { once: true });
-
-          // 2️⃣ Your existing tap vs scroll logic
+          // 📱 MOBILE / TOUCH: tap to toggle play/pause
           let startX = null;
           let startY = null;
           let moved = false;
@@ -367,7 +345,6 @@ function renderProjects(projects) {
             "touchend",
             (e) => {
               if (moved) {
-                // user was scrolling, don't toggle play
                 startX = startY = null;
                 return;
               }
