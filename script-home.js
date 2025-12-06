@@ -37,21 +37,17 @@ if (titleEl) {
 // GLOBALS FOR HORIZONTAL AUTO-SCROLL
 // -----------------------------
 let autoScrollRows = [];
-const autoScrollState = new WeakMap(); // row -> { amplitude }
+const autoScrollState = new WeakMap(); // row -> { amplitude, disabled, lastAutoScrollLeft, isAutoUpdating }
 
 // On scroll, recompute positions (simple + robust)
 window.addEventListener("scroll", updateAutoScrollFromScroll, { passive: true });
 
-// On resize, re-measure and re-apply
-window.addEventListener("resize", () => {
-  setupAutoScrollHints();
-  updateAutoScrollFromScroll();
-});
+// ❌ We NO LONGER rebuild auto-scroll hints on resize (Safari URL bar show/hide triggers resize)
+// We keep only the height-resize listener further down.
 
-
-
-// Update horizontal positions when page scrolls
-
+// -----------------------------
+// AUTO-SCROLL SETUP
+// -----------------------------
 
 /**
  * Initialize per-row auto-scroll state AFTER projects are rendered.
@@ -77,7 +73,7 @@ function setupAutoScrollHints() {
     const maxScroll = row.scrollWidth - row.clientWidth;
     if (maxScroll <= 5) {
       autoScrollState.set(row, null);
-      row.scrollLeft = 0;
+      // DO NOT touch row.scrollLeft here (prevents Safari reset issues)
       return;
     }
 
@@ -100,51 +96,46 @@ function setupAutoScrollHints() {
     }
 
     // Track our own last auto scroll position so we can detect user overrides
-const state = {
-  amplitude,
-  disabled: false,
-  lastAutoScrollLeft: 0,
-  isAutoUpdating: false,   // NEW: track when we are moving it via JS
-};
-autoScrollState.set(row, state);
-
-
-    // start everything at the left edge
-    row.scrollLeft = 0;
+    const state = {
+      amplitude,
+      disabled: false,
+      lastAutoScrollLeft: row.scrollLeft || 0,
+      isAutoUpdating: false,   // track when we are moving it via JS
+    };
+    autoScrollState.set(row, state);
 
     // ✅ Any scroll that diverges from lastAutoScrollLeft by a bit = user input
-row.addEventListener(
-  "scroll",
-  () => {
-    const s = autoScrollState.get(row);
-    if (!s || s.disabled) return;
+    // Attach listener only once
+    if (!row._hasAutoScrollListener) {
+      row._hasAutoScrollListener = true;
 
-    // If WE are the ones updating scrollLeft, ignore this event
-    if (s.isAutoUpdating) return;
+      row.addEventListener(
+        "scroll",
+        () => {
+          const s = autoScrollState.get(row);
+          if (!s || s.disabled) return;
 
-    const current = row.scrollLeft;
-    const diff = Math.abs(current - (s.lastAutoScrollLeft ?? 0));
+          // If WE are the ones updating scrollLeft, ignore this event
+          if (s.isAutoUpdating) return;
 
-    // Only real user movement (away from our last auto value)
-    // should freeze auto-scroll for this row.
-    if (diff > 5) {
-      s.disabled = true;
-      autoScrollState.set(row, s);
+          const current = row.scrollLeft;
+          const diff = Math.abs(current - (s.lastAutoScrollLeft ?? 0));
+
+          // Only real user movement (away from our last auto value)
+          // should freeze auto-scroll for this row.
+          if (diff > 5) {
+            s.disabled = true;
+            autoScrollState.set(row, s);
+          }
+        },
+        { passive: true }
+      );
     }
-  },
-  { passive: true }
-);
-
   });
 
   // apply initial positions based on current scroll (will be 0 at top)
   updateAutoScrollFromScroll();
 }
-
-
-
-
-
 
 /**
  * Link each row's vertical position in the viewport -> its horizontal offset.
@@ -158,20 +149,19 @@ function updateAutoScrollFromScroll() {
   const scrollY = window.scrollY || window.pageYOffset || 0;
 
   const TOP_LOCK = 40; // dead zone at very top
-if (scrollY < TOP_LOCK) {
-  autoScrollRows.forEach((row) => {
-    const state = autoScrollState.get(row);
-    if (!state || state.disabled) return;
+  if (scrollY < TOP_LOCK) {
+    autoScrollRows.forEach((row) => {
+      const state = autoScrollState.get(row);
+      if (!state || state.disabled) return;
 
-    state.isAutoUpdating = true;       //  mark as auto
-    row.scrollLeft = 0;
-    state.lastAutoScrollLeft = 0;
-    state.isAutoUpdating = false;      // done
-    autoScrollState.set(row, state);
-  });
-  return;
-}
-
+      state.isAutoUpdating = true;       // mark as auto
+      row.scrollLeft = 0;
+      state.lastAutoScrollLeft = 0;
+      state.isAutoUpdating = false;      // done
+      autoScrollState.set(row, state);
+    });
+    return;
+  }
 
   const vh = window.innerHeight || document.documentElement.clientHeight;
 
@@ -206,20 +196,17 @@ if (scrollY < TOP_LOCK) {
     // final strength = global ramp * local band
     const strength = global * t;
 
-const target = state.amplitude * strength;
+    const target = state.amplitude * strength;
 
-// Mark this as our own programmatic scroll so the `scroll` listener
-// doesn't treat it as user input.
-state.isAutoUpdating = true;
-row.scrollLeft = target;
-state.lastAutoScrollLeft = target;
-state.isAutoUpdating = false;
-autoScrollState.set(row, state);
-
+    // Mark this as our own programmatic scroll so the `scroll` listener
+    // doesn't treat it as user input.
+    state.isAutoUpdating = true;
+    row.scrollLeft = target;
+    state.lastAutoScrollLeft = target;
+    state.isAutoUpdating = false;
+    autoScrollState.set(row, state);
   });
 }
-
-
 
 
 
@@ -348,7 +335,6 @@ function renderProjects(projects) {
 
         el = video;
       } else {
-
         const img = document.createElement("img");
         const sep = rawSrc.includes("?") ? "&" : "?";
 
@@ -442,6 +428,7 @@ function setProjectHeights() {
   });
 }
 
+// this resize is ONLY for heights now (no re-setup of hints)
 window.addEventListener("resize", setProjectHeights);
 
 // -----------------------------
@@ -491,16 +478,12 @@ async function loadProjectsFromSanity() {
 }
 
 // When coming back from the Index page (via back/forward cache),
-// When we come back from the Index page via back/forward cache,
-// the JS doesn't re-run automatically. Force a fresh gallery render
-// so auto-scroll + video hover/tap re-initialize correctly.
+// re-fetch + re-render so everything is wired up again
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
-    // Re-fetch + re-render projects from Sanity
     loadProjectsFromSanity();
   }
 });
-
 
 // kick it off
 loadProjectsFromSanity();
