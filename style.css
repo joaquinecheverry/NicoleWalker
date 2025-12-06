@@ -562,11 +562,7 @@ body.index-page #Title {
   mix-blend-mode: normal;  /* stop the "difference" effect on white bg */
 }
 
-body.index-page #Title:hover,
-body.index-page #Index:hover,
-body.index-page #InfoButton:hover {
-  text-decoration: line-through;
-}
+
 
 /* Info overlay on index page: show black text on white bg */
 body.index-page #InfoContent {
@@ -605,12 +601,18 @@ body.index-page #InfoButton {
   }
 }
 
-/* Info overlay links (same behavior on home + index) */
-body.home-page #InfoContent a,
-body.index-page #InfoContent a {
-    color: rgb(0, 0, 0);
-    text-decoration: underline;
+/* Home page Info links = white */
+body.home-page #InfoContent a {
+  color: white;
+  text-decoration: underline;
 }
+
+/* Index page Info links = black (white background) */
+body.index-page #InfoContent a {
+  color: black;
+  text-decoration: underline;
+}
+
 
 body.home-page #InfoContent a:hover,
 body.index-page #InfoContent a:hover {
@@ -623,12 +625,13 @@ body.index-page #InfoButton {
   text-decoration: none;
 }
 
-/* Hover: show strikethrough while hovering */
-body.home-page #InfoButton:hover,
-body.index-page #InfoButton:hover {
-  text-decoration: line-through;
+/* Desktop-only hover state for Info button */
+@media (hover: hover) and (pointer: fine) {
+  body.home-page #InfoButton:hover,
+  body.index-page #InfoButton:hover {
+    text-decoration: line-through;
+  }
 }
-
 /* While the panel is actually open, keep it striked */
 body.home-page #InfoButton.info-open,
 body.index-page #InfoButton.info-open {
@@ -661,7 +664,6 @@ body.index-page #InfoButton.info-open {
   overflow-y: auto;              /* ✅ scrollable on mobile */
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
-  padding-bottom: 80px;
   background: transparent;
   pointer-events: auto;          /* ✅ allow touch/scroll */
 }
@@ -724,4 +726,29 @@ body.index-page #InfoButton.info-open {
   #Clients {
     margin-top: 0;
   }
+}
+
+.project {
+  scrollbar-width: none;        /* Firefox */
+}
+
+.project::-webkit-scrollbar {
+  display: none;                /* Chrome / Safari / Edge */
+}
+
+html, body {
+  scrollbar-width: none;        /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;                /* Chrome / Safari / Edge */
+}
+
+#InfoContent {
+  scrollbar-width: none;
+}
+
+#InfoContent::-webkit-scrollbar {
+  display: none;
 }
