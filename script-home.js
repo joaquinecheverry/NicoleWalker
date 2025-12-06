@@ -42,17 +42,15 @@ const autoScrollState = new WeakMap(); // row -> { amplitude, disabled, lastAuto
 // On scroll, recompute positions (simple + robust)
 window.addEventListener("scroll", updateAutoScrollFromScroll, { passive: true });
 
-// ❌ We NO LONGER rebuild auto-scroll hints on resize (Safari URL bar show/hide triggers resize)
-// We keep only the height-resize listener further down.
+// On resize, re-measure and re-apply
+window.addEventListener("resize", () => {
+  setupAutoScrollHints();
+  updateAutoScrollFromScroll();
+});
 
 // -----------------------------
-// AUTO-SCROLL SETUP
+// AUTO-SCROLL INITIALIZATION
 // -----------------------------
-
-/**
- * Initialize per-row auto-scroll state AFTER projects are rendered.
- * Called at the end of renderProjects().
- */
 function setupAutoScrollHints() {
   const allRows = Array.from(
     document.querySelectorAll(".project.has-multiple")
@@ -73,7 +71,7 @@ function setupAutoScrollHints() {
     const maxScroll = row.scrollWidth - row.clientWidth;
     if (maxScroll <= 5) {
       autoScrollState.set(row, null);
-      // DO NOT touch row.scrollLeft here (prevents Safari reset issues)
+      row.scrollLeft = 0;
       return;
     }
 
@@ -95,54 +93,88 @@ function setupAutoScrollHints() {
       }
     }
 
-    // Track our own last auto scroll position so we can detect user overrides
     const state = {
       amplitude,
       disabled: false,
-      lastAutoScrollLeft: row.scrollLeft || 0,
-      isAutoUpdating: false,   // track when we are moving it via JS
+      lastAutoScrollLeft: 0,
+      isAutoUpdating: false,
     };
     autoScrollState.set(row, state);
 
-    // ✅ Any scroll that diverges from lastAutoScrollLeft by a bit = user input
-    // Attach listener only once
-    if (!row._hasAutoScrollListener) {
-      row._hasAutoScrollListener = true;
+    // start everything at the left edge
+    row.scrollLeft = 0;
 
-      row.addEventListener(
-        "scroll",
-        () => {
-          const s = autoScrollState.get(row);
-          if (!s || s.disabled) return;
+    // ========= NEW: STRONGER USER-INTENT DETECTION =========
+    const disableRow = () => {
+      const s = autoScrollState.get(row);
+      if (!s || s.disabled) return;
+      s.disabled = true;
+      autoScrollState.set(row, s);
+    };
 
-          // If WE are the ones updating scrollLeft, ignore this event
-          if (s.isAutoUpdating) return;
+    // 1) Horizontal wheel (trackpad / mouse) → user override
+    row.addEventListener(
+      "wheel",
+      (e) => {
+        if (Math.abs(e.deltaX) > 10) {
+          disableRow();
+        }
+      },
+      { passive: true }
+    );
 
-          const current = row.scrollLeft;
-          const diff = Math.abs(current - (s.lastAutoScrollLeft ?? 0));
+    // 2) Touch horizontal swipe on the row → user override (mobile)
+    let touchStartX = null;
+    let touchStartY = null;
 
-          // Only real user movement (away from our last auto value)
-          // should freeze auto-scroll for this row.
-          if (diff > 5) {
-            s.disabled = true;
-            autoScrollState.set(row, s);
-          }
-        },
-        { passive: true }
-      );
-    }
+    row.addEventListener(
+      "touchstart",
+      (e) => {
+        const t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+      },
+      { passive: true }
+    );
+
+    row.addEventListener(
+      "touchmove",
+      (e) => {
+        if (touchStartX == null || touchStartY == null) return;
+        const t = e.touches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+
+        // clear horizontal intent threshold: mostly horizontal & > 15px
+        if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
+          disableRow();
+          touchStartX = touchStartY = null;
+        }
+      },
+      { passive: true }
+    );
+
+    // (Optional) scroll listener kept only for safety, but no longer disables;
+    // we rely on wheel/touch for user intent so we don't mis-detect.
+    row.addEventListener(
+      "scroll",
+      () => {
+        const s = autoScrollState.get(row);
+        if (!s || s.disabled) return;
+        if (s.isAutoUpdating) return;
+        // we could track lastManualScrollLeft here if needed later
+      },
+      { passive: true }
+    );
   });
 
   // apply initial positions based on current scroll (will be 0 at top)
   updateAutoScrollFromScroll();
 }
 
-/**
- * Link each row's vertical position in the viewport -> its horizontal offset.
- * - When a row's center is near the middle of the screen, it scrolls most.
- * - When it's near the top/bottom or off-screen, it goes back toward the left.
- * - Each row uses its own amplitude, so they don't all move the same amount.
- */
+// -----------------------------
+// AUTO-SCROLL POSITION UPDATE
+// -----------------------------
 function updateAutoScrollFromScroll() {
   if (!autoScrollRows.length) return;
 
@@ -154,10 +186,10 @@ function updateAutoScrollFromScroll() {
       const state = autoScrollState.get(row);
       if (!state || state.disabled) return;
 
-      state.isAutoUpdating = true;       // mark as auto
+      state.isAutoUpdating = true;
       row.scrollLeft = 0;
       state.lastAutoScrollLeft = 0;
-      state.isAutoUpdating = false;      // done
+      state.isAutoUpdating = false;
       autoScrollState.set(row, state);
     });
     return;
@@ -198,8 +230,7 @@ function updateAutoScrollFromScroll() {
 
     const target = state.amplitude * strength;
 
-    // Mark this as our own programmatic scroll so the `scroll` listener
-    // doesn't treat it as user input.
+    // Mark as programmatic so scroll listener doesn't treat it as user input
     state.isAutoUpdating = true;
     row.scrollLeft = target;
     state.lastAutoScrollLeft = target;
@@ -207,8 +238,6 @@ function updateAutoScrollFromScroll() {
     autoScrollState.set(row, state);
   });
 }
-
-
 
 // -----------------------------
 // RENDER GALLERY ROWS
@@ -428,7 +457,6 @@ function setProjectHeights() {
   });
 }
 
-// this resize is ONLY for heights now (no re-setup of hints)
 window.addEventListener("resize", setProjectHeights);
 
 // -----------------------------
@@ -478,7 +506,7 @@ async function loadProjectsFromSanity() {
 }
 
 // When coming back from the Index page (via back/forward cache),
-// re-fetch + re-render so everything is wired up again
+// re-fetch + re-render so auto-scroll re-initializes
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     loadProjectsFromSanity();
