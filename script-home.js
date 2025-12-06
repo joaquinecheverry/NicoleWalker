@@ -37,7 +37,7 @@ if (titleEl) {
 // GLOBALS FOR HORIZONTAL AUTO-SCROLL
 // -----------------------------
 let autoScrollRows = [];
-const autoScrollState = new WeakMap(); // row -> { amplitude }
+const autoScrollState = new WeakMap(); // row -> { amplitude, disabled, lastAutoScrollLeft, isAutoUpdating }
 
 // On scroll, recompute positions (simple + robust)
 window.addEventListener("scroll", updateAutoScrollFromScroll, { passive: true });
@@ -48,15 +48,9 @@ window.addEventListener("resize", () => {
   updateAutoScrollFromScroll();
 });
 
-
-
-// Update horizontal positions when page scrolls
-
-
-/**
- * Initialize per-row auto-scroll state AFTER projects are rendered.
- * Called at the end of renderProjects().
- */
+// -----------------------------
+// AUTO-SCROLL INITIALIZATION
+// -----------------------------
 function setupAutoScrollHints() {
   const allRows = Array.from(
     document.querySelectorAll(".project.has-multiple")
@@ -99,79 +93,107 @@ function setupAutoScrollHints() {
       }
     }
 
-    // Track our own last auto scroll position so we can detect user overrides
-const state = {
-  amplitude,
-  disabled: false,
-  lastAutoScrollLeft: 0,
-  isAutoUpdating: false,   // NEW: track when we are moving it via JS
-};
-autoScrollState.set(row, state);
-
+    const state = {
+      amplitude,
+      disabled: false,
+      lastAutoScrollLeft: 0,
+      isAutoUpdating: false,
+    };
+    autoScrollState.set(row, state);
 
     // start everything at the left edge
     row.scrollLeft = 0;
 
-    // ✅ Any scroll that diverges from lastAutoScrollLeft by a bit = user input
-row.addEventListener(
-  "scroll",
-  () => {
-    const s = autoScrollState.get(row);
-    if (!s || s.disabled) return;
-
-    // If WE are the ones updating scrollLeft, ignore this event
-    if (s.isAutoUpdating) return;
-
-    const current = row.scrollLeft;
-    const diff = Math.abs(current - (s.lastAutoScrollLeft ?? 0));
-
-    // Only real user movement (away from our last auto value)
-    // should freeze auto-scroll for this row.
-    if (diff > 5) {
+    // ========= NEW: STRONGER USER-INTENT DETECTION =========
+    const disableRow = () => {
+      const s = autoScrollState.get(row);
+      if (!s || s.disabled) return;
       s.disabled = true;
       autoScrollState.set(row, s);
-    }
-  },
-  { passive: true }
-);
+    };
 
+    // 1) Horizontal wheel (trackpad / mouse) → user override
+    row.addEventListener(
+      "wheel",
+      (e) => {
+        if (Math.abs(e.deltaX) > 10) {
+          disableRow();
+        }
+      },
+      { passive: true }
+    );
+
+    // 2) Touch horizontal swipe on the row → user override (mobile)
+    let touchStartX = null;
+    let touchStartY = null;
+
+    row.addEventListener(
+      "touchstart",
+      (e) => {
+        const t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+      },
+      { passive: true }
+    );
+
+    row.addEventListener(
+      "touchmove",
+      (e) => {
+        if (touchStartX == null || touchStartY == null) return;
+        const t = e.touches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+
+        // clear horizontal intent threshold: mostly horizontal & > 15px
+        if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
+          disableRow();
+          touchStartX = touchStartY = null;
+        }
+      },
+      { passive: true }
+    );
+
+    // (Optional) scroll listener kept only for safety, but no longer disables;
+    // we rely on wheel/touch for user intent so we don't mis-detect.
+    row.addEventListener(
+      "scroll",
+      () => {
+        const s = autoScrollState.get(row);
+        if (!s || s.disabled) return;
+        if (s.isAutoUpdating) return;
+        // we could track lastManualScrollLeft here if needed later
+      },
+      { passive: true }
+    );
   });
 
   // apply initial positions based on current scroll (will be 0 at top)
   updateAutoScrollFromScroll();
 }
 
-
-
-
-
-
-/**
- * Link each row's vertical position in the viewport -> its horizontal offset.
- * - When a row's center is near the middle of the screen, it scrolls most.
- * - When it's near the top/bottom or off-screen, it goes back toward the left.
- * - Each row uses its own amplitude, so they don't all move the same amount.
- */
+// -----------------------------
+// AUTO-SCROLL POSITION UPDATE
+// -----------------------------
 function updateAutoScrollFromScroll() {
   if (!autoScrollRows.length) return;
 
   const scrollY = window.scrollY || window.pageYOffset || 0;
 
   const TOP_LOCK = 40; // dead zone at very top
-if (scrollY < TOP_LOCK) {
-  autoScrollRows.forEach((row) => {
-    const state = autoScrollState.get(row);
-    if (!state || state.disabled) return;
+  if (scrollY < TOP_LOCK) {
+    autoScrollRows.forEach((row) => {
+      const state = autoScrollState.get(row);
+      if (!state || state.disabled) return;
 
-    state.isAutoUpdating = true;       //  mark as auto
-    row.scrollLeft = 0;
-    state.lastAutoScrollLeft = 0;
-    state.isAutoUpdating = false;      // done
-    autoScrollState.set(row, state);
-  });
-  return;
-}
-
+      state.isAutoUpdating = true;
+      row.scrollLeft = 0;
+      state.lastAutoScrollLeft = 0;
+      state.isAutoUpdating = false;
+      autoScrollState.set(row, state);
+    });
+    return;
+  }
 
   const vh = window.innerHeight || document.documentElement.clientHeight;
 
@@ -206,22 +228,16 @@ if (scrollY < TOP_LOCK) {
     // final strength = global ramp * local band
     const strength = global * t;
 
-const target = state.amplitude * strength;
+    const target = state.amplitude * strength;
 
-// Mark this as our own programmatic scroll so the `scroll` listener
-// doesn't treat it as user input.
-state.isAutoUpdating = true;
-row.scrollLeft = target;
-state.lastAutoScrollLeft = target;
-state.isAutoUpdating = false;
-autoScrollState.set(row, state);
-
+    // Mark as programmatic so scroll listener doesn't treat it as user input
+    state.isAutoUpdating = true;
+    row.scrollLeft = target;
+    state.lastAutoScrollLeft = target;
+    state.isAutoUpdating = false;
+    autoScrollState.set(row, state);
   });
 }
-
-
-
-
 
 // -----------------------------
 // RENDER GALLERY ROWS
@@ -348,7 +364,6 @@ function renderProjects(projects) {
 
         el = video;
       } else {
-
         const img = document.createElement("img");
         const sep = rawSrc.includes("?") ? "&" : "?";
 
@@ -491,16 +506,12 @@ async function loadProjectsFromSanity() {
 }
 
 // When coming back from the Index page (via back/forward cache),
-// When we come back from the Index page via back/forward cache,
-// the JS doesn't re-run automatically. Force a fresh gallery render
-// so auto-scroll + video hover/tap re-initialize correctly.
+// re-fetch + re-render so auto-scroll re-initializes
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
-    // Re-fetch + re-render projects from Sanity
     loadProjectsFromSanity();
   }
 });
-
 
 // kick it off
 loadProjectsFromSanity();
