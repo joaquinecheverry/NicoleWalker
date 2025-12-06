@@ -42,9 +42,10 @@ if (titleEl && document.body.classList.contains("home-page")) {
 // HORIZONTAL AUTO-SCROLL HINT
 // -----------------------------
 
-// SAME LOGIC as before, but scroll is throttled with rAF for smoothness
+// same logic as before, but with a tiny per-row "current" state
+// so fast scrolling is smoothed instead of jumpy
 let autoScrollRows = [];
-const autoScrollState = new WeakMap(); // row -> { amplitude }
+const autoScrollState = new WeakMap(); // row -> { amplitude, current }
 let scrollRafId = null;
 
 function setupAutoScrollHints() {
@@ -79,7 +80,10 @@ function setupAutoScrollHints() {
       }
     }
 
-    autoScrollState.set(row, { amplitude });
+    autoScrollState.set(row, {
+      amplitude,
+      current: 0,   // smoothed scrollLeft we control
+    });
 
     // always start aligned left on rebuild
     row.scrollLeft = 0;
@@ -112,6 +116,7 @@ function updateAutoScrollFromScroll() {
 
     if (scrollY < TOP_LOCK) {
       // At the very top → no peek
+      state.current = 0;
       row.scrollLeft = 0;
       return;
     }
@@ -129,8 +134,16 @@ function updateAutoScrollFromScroll() {
     const strength = global * t;
     const target = state.amplitude * strength;
 
-    row.scrollLeft = target;
+    // 🔹 smooth toward target to avoid choppy jumps on fast scroll
+    const alpha = 0.2; // 0–1, smaller = smoother/slower
+    const current = state.current + (target - state.current) * alpha;
+
+    state.current = current;
+    row.scrollLeft = current;
   });
+
+  // also drive video autoplay from the same scroll pass
+  updateVideoAutoplay();
 }
 
 // rAF-throttled scroll handler (same behavior, smoother)
@@ -149,7 +162,7 @@ window.addEventListener("resize", () => {
   setupAutoScrollHints();
 });
 
-// Also re-run hints when the page is shown again (covers some bfcache cases)
+// Re-run hints when the page is shown again (covers some bfcache cases)
 window.addEventListener("pageshow", () => {
   setupAutoScrollHints();
   updateAutoScrollFromScroll();
@@ -160,41 +173,46 @@ window.addEventListener("pageshow", () => {
 // MOBILE VIDEO AUTOPLAY ON SCROLL
 // -----------------------------
 
-let videoObserver = null;
+let autoVideos = [];
 
 function setupVideoAutoplay() {
-  // clear previous observer
-  if (videoObserver) {
-    videoObserver.disconnect();
-    videoObserver = null;
-  }
-
-  const videos = Array.from(document.querySelectorAll(".project-item video"));
-  if (!videos.length) return;
-
-  const mqHoverDesktop = window.matchMedia("(hover: hover) && (pointer: fine)");
-
-  // Autoplay-on-scroll only for touch devices; desktop keeps hover behavior
-  if (mqHoverDesktop.matches) return;
-
-  videoObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        const video = entry.target;
-        if (entry.isIntersecting && entry.intersectionRatio > 0.35) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      });
-    },
-    {
-      threshold: [0.1, 0.35, 0.7],
-    }
-  );
-
-  videos.forEach((video) => videoObserver.observe(video));
+  autoVideos = Array.from(document.querySelectorAll(".project-item video"));
+  // nothing else to do here; we drive them from updateVideoAutoplay()
 }
+
+function updateVideoAutoplay() {
+  if (!autoVideos.length) return;
+
+  const isDesktopHover = window.matchMedia(
+    "(hover: hover) and (pointer: fine)"
+  ).matches;
+
+  // Only do scroll-based autoplay on touch / non-hover devices
+  if (isDesktopHover) return;
+
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+
+  autoVideos.forEach((video) => {
+    const rect = video.getBoundingClientRect();
+    const height = rect.height || 1;
+
+    const visible =
+      Math.max(0, Math.min(rect.bottom, vh) - Math.max(rect.top, 0));
+    const ratio = visible / height;
+
+    // If at least ~45% of the video is visible → play, else pause
+    if (ratio > 0.45) {
+      if (video.paused) {
+        video.play().catch(() => {});
+      }
+    } else {
+      if (!video.paused) {
+        video.pause();
+      }
+    }
+  });
+}
+
 
 // -----------------------------
 // RENDER GALLERY ROWS
@@ -233,7 +251,7 @@ function renderProjects(projects) {
         video.muted = true;   // no audio
         video.volume = 0;
         video.playsInline = true;
-        video.preload = "auto";   // 🔹 ensure thumbnail / first frame loads
+        video.preload = "auto";   // try to show first frame / thumbnail
         video.controls = false;   // no native controls
 
         // hover / tap behavior (same as before)
@@ -255,9 +273,17 @@ function renderProjects(projects) {
         );
 
         if (mqHoverDesktop.matches) {
+          // desktop → hover to play
           video.addEventListener("mouseenter", play);
           video.addEventListener("mouseleave", pause);
+          // optional click toggle
+          video.addEventListener("click", () => {
+            if (video.paused) play();
+            else pause();
+          });
         } else {
+          // mobile: we rely on scroll-based autoplay,
+          // but keep tap-to-toggle as a fallback
           let startX = null;
           let startY = null;
           let moved = false;
@@ -301,11 +327,6 @@ function renderProjects(projects) {
             },
             { passive: false }
           );
-
-          video.addEventListener("click", () => {
-            if (video.paused) play();
-            else pause();
-          });
         }
 
         el = video;
@@ -346,7 +367,7 @@ function renderProjects(projects) {
   // and (re)build auto-scroll hints for these rows
   setupAutoScrollHints();
 
-  // mobile video autoplay-on-scroll
+  // collect videos for scroll-based autoplay
   setupVideoAutoplay();
 }
 
