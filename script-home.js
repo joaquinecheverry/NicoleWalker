@@ -277,94 +277,35 @@ function renderProjects(projects) {
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
 
-        // use the Sanity thumbnail as a poster if available
-        const thumbUrl = item.thumb || null;
-        if (thumbUrl) {
-          video.poster = thumbUrl;
-        }
-
-        // we can go lighter here, metadata is enough now that we have a poster
+        // light on bandwidth, but still enough to get a frame
         video.preload = "metadata";
 
-        video.controls = false;   // no native UI
+        // NO native controls
+        video.controls = false;
 
-        const play = () => {
+        // Single toggle for play/pause
+        const togglePlay = () => {
           if (video.paused) {
-            video.play().catch((err) =>
-              console.warn("Video play failed:", err)
-            );
-          }
-        };
-
-        const pause = () => {
-          if (!video.paused) {
+            video.play().catch((err) => {
+              console.warn("Video play failed:", err);
+            });
+          } else {
             video.pause();
           }
         };
 
-        const mqHoverDesktop = window.matchMedia(
-          "(hover: hover) and (pointer: fine)"
+        // Desktop click
+        video.addEventListener("click", togglePlay);
+
+        // Mobile tap
+        video.addEventListener(
+          "touchend",
+          (e) => {
+            if (e.cancelable) e.preventDefault(); // avoid ghost click
+            togglePlay();
+          },
+          { passive: false }
         );
-
-        if (mqHoverDesktop.matches) {
-          // 🖱️ DESKTOP: play on hover, pause on leave
-          video.addEventListener("mouseenter", play);
-          video.addEventListener("mouseleave", pause);
-        } else {
-          // 📱 MOBILE / TOUCH: tap to toggle play/pause
-          let startX = null;
-          let startY = null;
-          let moved = false;
-
-          video.addEventListener(
-            "touchstart",
-            (e) => {
-              const t = e.touches[0];
-              startX = t.clientX;
-              startY = t.clientY;
-              moved = false;
-            },
-            { passive: true }
-          );
-
-          video.addEventListener(
-            "touchmove",
-            (e) => {
-              if (startX == null || startY == null) return;
-              const t = e.touches[0];
-              const dx = t.clientX - startX;
-              const dy = t.clientY - startY;
-              if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                moved = true; // treat as scroll/drag, not tap
-              }
-            },
-            { passive: true }
-          );
-
-          video.addEventListener(
-            "touchend",
-            (e) => {
-              if (moved) {
-                startX = startY = null;
-                return;
-              }
-              e.preventDefault();
-              if (video.paused) {
-                play();
-              } else {
-                pause();
-              }
-              startX = startY = null;
-            },
-            { passive: false }
-          );
-
-          // Fallback for some touch devices / emulators:
-          video.addEventListener("click", () => {
-            if (video.paused) play();
-            else pause();
-          });
-        }
 
         el = video;
       } else {
