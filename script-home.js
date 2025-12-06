@@ -39,12 +39,29 @@ if (titleEl) {
 let autoScrollRows = [];
 const autoScrollState = new WeakMap(); // row -> { amplitude }
 
-// On scroll, recompute positions (simple + robust)
-window.addEventListener("scroll", updateAutoScrollFromScroll, { passive: true });
+// rAF throttle for smoother horizontal motion on fast vertical scroll
+let lastKnownScrollY = 0;
+let scrollTicking = false;
+
+window.addEventListener(
+  "scroll",
+  () => {
+    lastKnownScrollY = window.scrollY || window.pageYOffset || 0;
+
+    if (!scrollTicking) {
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        updateAutoScrollFromScroll(lastKnownScrollY);
+        scrollTicking = false;
+      });
+    }
+  },
+  { passive: true }
+);
 
 // ⛔️ IMPORTANT:
-// We removed the resize listener that called setupAutoScrollHints() here,
-// so Safari's URL bar show/hide doesn't wipe the per-row state anymore.
+// We do NOT call setupAutoScrollHints() on resize anymore,
+// so Safari's URL bar show/hide doesn't wipe per-row state.
 
 
 // -----------------------------
@@ -143,10 +160,13 @@ function setupAutoScrollHints() {
  * - When it's near the top/bottom or off-screen, it goes back toward the left.
  * - Each row uses its own amplitude, so they don't all move the same amount.
  */
-function updateAutoScrollFromScroll() {
+function updateAutoScrollFromScroll(passedScrollY) {
   if (!autoScrollRows.length) return;
 
-  const scrollY = window.scrollY || window.pageYOffset || 0;
+  const scrollY =
+    typeof passedScrollY === "number"
+      ? passedScrollY
+      : (window.scrollY || window.pageYOffset || 0);
 
   const TOP_LOCK = 40; // dead zone at very top
   if (scrollY < TOP_LOCK) {
@@ -248,8 +268,14 @@ function renderProjects(projects) {
         video.muted = true;
         video.volume = 0;
 
+        // inline playback on iOS
         video.playsInline = true;
-        video.preload = "metadata";
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
+
+        // more eager preload so we actually get a visible first frame on mobile
+        video.preload = "auto";
+
         video.controls = false;   // no native UI
 
         const play = () => {
@@ -334,7 +360,6 @@ function renderProjects(projects) {
 
         el = video;
       } else {
-
         const img = document.createElement("img");
         const sep = rawSrc.includes("?") ? "&" : "?";
 
