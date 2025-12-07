@@ -16,9 +16,11 @@
   ],
   "dependencies": {
     "@sanity/vision": "^4.20.0",
+    "mux-embed": "^5.14.0",
     "react": "^19.1",
     "react-dom": "^19.1",
     "sanity": "^4.20.0",
+    "sanity-plugin-mux-input": "^2.12.0",
     "styled-components": "^6.1.18"
   },
   "devDependencies": {

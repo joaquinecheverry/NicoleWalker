@@ -37,19 +37,18 @@ export const photoCollection = defineType({
             }),
           ],
         }),
-        // VIDEO ITEM
+
+        // VIDEO ITEM (MUX)
         defineField({
           name: 'videoItem',
-          type: 'object',
           title: 'Video',
+          type: 'object',
           fields: [
             defineField({
-              name: 'file',
-              title: 'Video file',
-              type: 'file',
-              options: {
-                accept: 'video/*', // mp4, mov, etc.
-              },
+              name: 'muxVideo',
+              title: 'Mux Video',
+              // 👇 this type comes from the mux plugin – e.g. `mux.video`
+              type: 'mux.video',
             }),
             defineField({
               name: 'poster',

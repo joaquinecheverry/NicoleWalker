@@ -59,11 +59,6 @@ window.addEventListener(
   { passive: true }
 );
 
-// ⛔️ IMPORTANT:
-// We do NOT call setupAutoScrollHints() on resize anymore,
-// so Safari's URL bar show/hide doesn't wipe per-row state.
-
-
 // -----------------------------
 // AUTO-SCROLL SETUP
 // -----------------------------
@@ -230,6 +225,42 @@ function updateAutoScrollFromScroll(passedScrollY) {
 
 
 // -----------------------------
+// VIDEO AUTOPLAY (MUX) SETUP
+// -----------------------------
+let videoObserver = null;
+
+function setupVideoAutoplay() {
+  if (videoObserver) {
+    videoObserver.disconnect();
+    videoObserver = null;
+  }
+
+  const videos = document.querySelectorAll(".project-item video");
+  if (!videos.length) return;
+
+  videoObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const v = entry.target;
+        if (entry.isIntersecting) {
+          // Autoplay when visible
+          v.play().catch(() => {
+            // ignore autoplay errors
+          });
+        } else {
+          // Pause when off screen
+          v.pause();
+        }
+      });
+    },
+    { threshold: 0.4 } // ~40% visible
+  );
+
+  videos.forEach((v) => videoObserver.observe(v));
+}
+
+
+// -----------------------------
 // RENDER GALLERY ROWS
 // -----------------------------
 function renderProjects(projects) {
@@ -249,12 +280,16 @@ function renderProjects(projects) {
     );
 
     (project.media || []).forEach((item) => {
-      const rawSrc = typeof item === "string" ? item : item.url;
+      const isString = typeof item === "string";
+      const rawSrc   = isString ? item : item.url;
+      const muxId    = !isString ? item.muxPlaybackId : null;
+      const poster   = !isString ? item.posterUrl : null;
+
       const type =
-        typeof item === "string"
-          ? (rawSrc.endsWith(".mp4") || rawSrc.endsWith(".webm")
+        isString
+          ? (rawSrc && (rawSrc.endsWith(".mp4") || rawSrc.endsWith(".webm")
               ? "video"
-              : "image")
+              : "image"))
           : (item.type || "image");
 
       const cell = document.createElement("div");
@@ -264,126 +299,85 @@ function renderProjects(projects) {
 
       if (type === "video") {
         const video = document.createElement("video");
-        video.src = rawSrc;
+
+        // DEBUG (optional): see what each media item looks like
+        // console.log('video media item', item);
+
+        // Use Mux HLS URL if we have it, otherwise fall back to rawSrc
+        if (muxId) {
+          const source = document.createElement("source");
+          source.src = `https://stream.mux.com/${muxId}.m3u8`;
+          source.type = "application/x-mpegURL";
+          video.appendChild(source);
+        } else if (rawSrc) {
+          video.src = rawSrc;
+        }
+
+        // optional poster from Sanity → gives you a real thumbnail
+        if (poster) {
+          const sep = poster.includes("?") ? "&" : "?";
+          const targetW = isMobile ? 500 : 1500;
+          video.poster = `${poster}${sep}w=${targetW}&auto=format&q=70`;
+        }
+
         video.loop = true;
 
         // 🔇 always muted, no audio
         video.muted = true;
         video.volume = 0;
-        video.setAttribute("muted", "");           // important for iOS
+        video.setAttribute("muted", "");
 
         // inline playback on iOS
         video.playsInline = true;
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
 
+        // hint to browsers
+        video.autoplay = true;
+        video.setAttribute("autoplay", "");
+
         // more eager preload so we actually get a visible first frame on mobile
         video.preload = "auto";
 
         video.controls = false;   // no native UI
 
-        // 👇 NEW: force Safari to decode & paint a frame once data is ready
+        // Small nudge to force iOS to paint a frame if needed
+        video.addEventListener(
+          "loadeddata",
+          () => {
+            try {
+              if (video.currentTime === 0) {
+                video.currentTime = 0.01;
+              }
+            } catch (_) {
+              // ignore
+            }
+          },
+          { once: true }
+        );
+
+        // Optional: tap to pause/resume on mobile
         if (!mqHoverDesktop.matches) {
-          video.addEventListener(
-            "loadeddata",
-            () => {
-              try {
-                // Nudge currentTime slightly so iOS draws a frame
-                if (video.currentTime === 0) {
-                  video.currentTime = 0.01;
-                }
-              } catch (e) {
-                // ignore if it complains
-              }
-            },
-            { once: true }
-          );
-        }
-
-        const play = () => {
-          if (video.paused) {
-            video.play().catch((err) =>
-              console.warn("Video play failed:", err)
-            );
-          }
-        };
-
-        const pause = () => {
-          if (!video.paused) {
-            video.pause();
-          }
-        };
-
-        if (mqHoverDesktop.matches) {
-          // 🖱️ DESKTOP: play on hover, pause on leave
-          video.addEventListener("mouseenter", play);
-          video.addEventListener("mouseleave", pause);
-        } else {
-          // 📱 MOBILE / TOUCH: tap to toggle play/pause
-          // also try to ignore horizontal swipe/scroll vs tap
-          let startX = null;
-          let startY = null;
-          let moved = false;
-
-          video.addEventListener(
-            "touchstart",
-            (e) => {
-              const t = e.touches[0];
-              startX = t.clientX;
-              startY = t.clientY;
-              moved = false;
-            },
-            { passive: true }
-          );
-
-          video.addEventListener(
-            "touchmove",
-            (e) => {
-              if (startX == null || startY == null) return;
-              const t = e.touches[0];
-              const dx = t.clientX - startX;
-              const dy = t.clientY - startY;
-              if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                moved = true; // treat as scroll/drag, not tap
-              }
-            },
-            { passive: true }
-          );
-
-          video.addEventListener(
-            "touchend",
-            (e) => {
-              if (moved) {
-                // user was scrolling, don't toggle play
-                startX = startY = null;
-                return;
-              }
-              e.preventDefault();
-              if (video.paused) {
-                play();
-              } else {
-                pause();
-              }
-              startX = startY = null;
-            },
-            { passive: false }
-          );
-
-          // Fallback for some touch devices / emulators:
           video.addEventListener("click", () => {
-            if (video.paused) play();
-            else pause();
+            if (video.paused) {
+              video.play().catch(() => {});
+            } else {
+              video.pause();
+            }
           });
         }
 
         el = video;
       } else {
         const img = document.createElement("img");
-        const sep = rawSrc.includes("?") ? "&" : "?";
+        const sep = rawSrc && rawSrc.includes("?") ? "&" : "?";
 
         // slightly reduced width + quality for bandwidth
         const targetW = isMobile ? 500 : 1500;
-        img.src = `${rawSrc}${sep}w=${targetW}&auto=format&q=65`;
+        img.src = rawSrc
+          ? `${rawSrc}${sep}w=${targetW}&auto=format&q=65`
+          : "";
+
         img.loading = "lazy";
 
         el = img;
@@ -412,6 +406,9 @@ function renderProjects(projects) {
 
   // set up interactive auto-scroll on multi-image rows
   setupAutoScrollHints();
+
+  // set up Mux video autoplay/pause on intersection
+  setupVideoAutoplay();
 }
 
 // -----------------------------
@@ -482,20 +479,21 @@ async function loadProjectsFromSanity() {
   const apiVersion = "2023-05-03";
 
   const query = `
-    *[_type == "photoCollection"] | order(order asc) {
-      _id,
-      title,
-      "media": images[]{
-        _type == "imageItem" => {
-          "type": "image",
-          "url": asset->url
-        },
-        _type == "videoItem" => {
-          "type": "video",
-          "url": file.asset->url
-        }
+  *[_type == "photoCollection"] | order(order asc) {
+    _id,
+    title,
+    "media": images[]{
+      _type == "imageItem" => {
+        "type": "image",
+        "url": asset->url
+      },
+      _type == "videoItem" => {
+        "type": "video",
+        "muxPlaybackId": muxVideo.asset->playbackId,
+        "posterUrl": poster.asset->url
       }
     }
+  }
   `;
 
   const encodedQuery = encodeURIComponent(query);
@@ -524,7 +522,6 @@ async function loadProjectsFromSanity() {
 // so auto-scroll + video hover/tap re-initialize correctly.
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
-    // Re-fetch + re-render projects from Sanity
     loadProjectsFromSanity();
   }
 });
