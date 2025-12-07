@@ -355,9 +355,6 @@ function renderProjects(projects) {
       if (type === "video") {
         const video = document.createElement("video");
 
-        // DEBUG (optional): see what each media item looks like
-        // console.log('video media item', item);
-
         // Use Mux HLS URL if we have it, otherwise fall back to rawSrc
         if (muxId) {
           const source = document.createElement("source");
@@ -395,6 +392,12 @@ function renderProjects(projects) {
         video.preload = "auto";
 
         video.controls = false;   // no native UI
+
+        // 🚫 prevent tiny/shrunken layout before we know dimensions
+        video.style.display   = "block";
+        video.style.width     = "100%";
+        video.style.height    = "100%";
+        video.style.objectFit = "cover";
 
         // Small nudge to force iOS to paint a frame if needed
         video.addEventListener(
@@ -435,6 +438,12 @@ function renderProjects(projects) {
 
         img.loading = "lazy";
 
+        // 🚫 prevent tiny / off-to-the-side flicker
+        img.style.display   = "block";
+        img.style.width     = "100%";
+        img.style.height    = "100%";
+        img.style.objectFit = "cover";
+
         el = img;
       }
 
@@ -455,16 +464,19 @@ function renderProjects(projects) {
     main.appendChild(projectEl);
   });
 
-  // compute heights
+  // 1️⃣ First pass: give rows some height right away
   setProjectHeights();
-  setTimeout(setProjectHeights, 200); // iOS Safari safety
 
-  // set up interactive auto-scroll on multi-image rows
-  setupAutoScrollHints();
-
-  // set up Mux video autoplay/pause on intersection
-  setupVideoAutoplay();
+  // 2️⃣ Second pass: after media had a moment to report dimensions,
+  //    recompute heights and THEN start auto-scroll + autoplay.
+  setTimeout(() => {
+    setProjectHeights();
+    setupAutoScrollHints();
+    updateAutoScrollFromScroll(lastKnownScrollY || 0);
+    setupVideoAutoplay();
+  }, 300);
 }
+
 
 // -----------------------------
 // MATCH ROW HEIGHT TO FIRST IMAGE
