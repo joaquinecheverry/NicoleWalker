@@ -358,24 +358,24 @@ function renderProjects(projects) {
 
         video.loop = true;
 
-        // 🔇 always muted, no audio
-        video.muted = true;
-        video.volume = 0;
-        video.setAttribute("muted", "");
+        // 🔊 AUDIO ON by default
+        video.muted = false;
+        video.volume = 1;
+        video.removeAttribute("muted");
 
         // inline playback on iOS
         video.playsInline = true;
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
 
-        // hint to browsers
+        // ask browser to autoplay with sound (may be blocked by policy)
         video.autoplay = true;
         video.setAttribute("autoplay", "");
         video.preload = "auto";
 
         video.controls = false;
 
-        // 🔧 IMPORTANT: make sure it fills the cell from the very start
+        // fill the cell from the very start
         video.style.display   = "block";
         video.style.width     = "100%";
         video.style.height    = "100%";
@@ -393,15 +393,14 @@ function renderProjects(projects) {
           { once: true }
         );
 
-        if (!mqHoverDesktop.matches) {
-          video.addEventListener("click", () => {
-            if (video.paused) {
-              video.play().catch(() => {});
-            } else {
-              video.pause();
-            }
-          });
-        }
+        // mobile / desktop click: just toggle play/pause
+        video.addEventListener("click", () => {
+          if (video.paused) {
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
 
         el = video;
       } else {
@@ -413,7 +412,6 @@ function renderProjects(projects) {
           : "";
         img.loading = "lazy";
 
-        // 🔧 same: fill the cell immediately, no tiny image phase
         img.style.display   = "block";
         img.style.width     = "100%";
         img.style.height    = "100%";
