@@ -37,12 +37,17 @@ if (titleEl) {
 // GLOBALS FOR HORIZONTAL AUTO-SCROLL
 // -----------------------------
 let autoScrollRows = [];
-const autoScrollState = new WeakMap(); // row -> { amplitude }
+// row -> { amplitude, disabled, lastAutoScrollLeft, isAutoUpdating, targetScrollLeft }
+const autoScrollState = new WeakMap();
 
-// rAF throttle for smoother horizontal motion on fast vertical scroll
+// rAF throttle for reading scrollY → smoother target updates
 let lastKnownScrollY = 0;
 let scrollTicking = false;
 
+// rAF id for the smoothing loop
+let autoScrollRafId = null;
+
+// Scroll listener: only computes targets, not actual motion
 window.addEventListener(
   "scroll",
   () => {
@@ -58,6 +63,11 @@ window.addEventListener(
   },
   { passive: true }
 );
+
+// ⛔️ IMPORTANT:
+// We do NOT call setupAutoScrollHints() on resize anymore,
+// so Safari's URL bar show/hide doesn't wipe per-row state.
+
 
 // -----------------------------
 // AUTO-SCROLL SETUP
@@ -114,7 +124,8 @@ function setupAutoScrollHints() {
       amplitude,
       disabled: false,
       lastAutoScrollLeft: 0,
-      isAutoUpdating: false,   // track when we are moving it via JS
+      isAutoUpdating: false,
+      targetScrollLeft: 0,
     };
     autoScrollState.set(row, state);
 
@@ -145,15 +156,18 @@ function setupAutoScrollHints() {
     );
   });
 
-  // apply initial positions based on current scroll (will be 0 at top)
+  // apply initial targets based on current scroll (will be 0 at top)
   updateAutoScrollFromScroll();
+
+  // start the smoothing loop if not already running
+  if (!autoScrollRafId) {
+    autoScrollRafId = requestAnimationFrame(animateAutoScroll);
+  }
 }
 
 /**
- * Link each row's vertical position in the viewport -> its horizontal offset.
- * - When a row's center is near the middle of the screen, it scrolls most.
- * - When it's near the top/bottom or off-screen, it goes back toward the left.
- * - Each row uses its own amplitude, so they don't all move the same amount.
+ * Compute each row's *target* horizontal offset from vertical scroll.
+ * Actual movement toward that target is smoothed in animateAutoScroll().
  */
 function updateAutoScrollFromScroll(passedScrollY) {
   if (!autoScrollRows.length) return;
@@ -169,10 +183,13 @@ function updateAutoScrollFromScroll(passedScrollY) {
       const state = autoScrollState.get(row);
       if (!state || state.disabled) return;
 
-      state.isAutoUpdating = true;       //  mark as auto
+      state.targetScrollLeft = 0;
+
+      // snap to 0 at the very top so everything lines up cleanly
+      state.isAutoUpdating = true;
       row.scrollLeft = 0;
       state.lastAutoScrollLeft = 0;
-      state.isAutoUpdating = false;      // done
+      state.isAutoUpdating = false;
       autoScrollState.set(row, state);
     });
     return;
@@ -213,15 +230,53 @@ function updateAutoScrollFromScroll(passedScrollY) {
 
     const target = state.amplitude * strength;
 
-    // Mark this as our own programmatic scroll so the `scroll` listener
-    // doesn't treat it as user input.
-    state.isAutoUpdating = true;
-    row.scrollLeft = target;
-    state.lastAutoScrollLeft = target;
-    state.isAutoUpdating = false;
+    // just update the target; actual scroll is animated
+    state.targetScrollLeft = target;
     autoScrollState.set(row, state);
   });
 }
+
+// -----------------------------
+// SMOOTH ANIMATION TOWARD TARGET
+// -----------------------------
+function animateAutoScroll() {
+  if (!autoScrollRows.length) {
+    autoScrollRafId = null;
+    return;
+  }
+
+  const SMOOTHING = 0.12; // 0–1, higher = faster
+
+  autoScrollRows.forEach((row) => {
+    const state = autoScrollState.get(row);
+    if (!state || state.disabled) return;
+
+    const current = row.scrollLeft;
+    const target  = state.targetScrollLeft ?? 0;
+    const diff    = target - current;
+
+    // close enough → snap & stop moving
+    if (Math.abs(diff) < 0.5) {
+      state.isAutoUpdating = true;
+      row.scrollLeft = target;
+      state.lastAutoScrollLeft = target;
+      state.isAutoUpdating = false;
+      autoScrollState.set(row, state);
+      return;
+    }
+
+    const next = current + diff * SMOOTHING;
+
+    state.isAutoUpdating = true;
+    row.scrollLeft = next;
+    state.lastAutoScrollLeft = next;
+    state.isAutoUpdating = false;
+    autoScrollState.set(row, state);
+  });
+
+  autoScrollRafId = requestAnimationFrame(animateAutoScroll);
+}
+
 
 
 // -----------------------------
