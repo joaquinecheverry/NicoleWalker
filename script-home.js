@@ -64,11 +64,6 @@ window.addEventListener(
   { passive: true }
 );
 
-// ⛔️ IMPORTANT:
-// We do NOT call setupAutoScrollHints() on resize anymore,
-// so Safari's URL bar show/hide doesn't wipe per-row state.
-
-
 // -----------------------------
 // AUTO-SCROLL SETUP
 // -----------------------------
@@ -145,8 +140,6 @@ function setupAutoScrollHints() {
         const current = row.scrollLeft;
         const diff = Math.abs(current - (s.lastAutoScrollLeft ?? 0));
 
-        // Only real user movement (away from our last auto value)
-        // should freeze auto-scroll for this row.
         if (diff > 5) {
           s.disabled = true;
           autoScrollState.set(row, s);
@@ -277,8 +270,6 @@ function animateAutoScroll() {
   autoScrollRafId = requestAnimationFrame(animateAutoScroll);
 }
 
-
-
 // -----------------------------
 // VIDEO AUTOPLAY (MUX) SETUP
 // -----------------------------
@@ -298,22 +289,17 @@ function setupVideoAutoplay() {
       entries.forEach((entry) => {
         const v = entry.target;
         if (entry.isIntersecting) {
-          // Autoplay when visible
-          v.play().catch(() => {
-            // ignore autoplay errors
-          });
+          v.play().catch(() => {});
         } else {
-          // Pause when off screen
           v.pause();
         }
       });
     },
-    { threshold: 0.4 } // ~40% visible
+    { threshold: 0.4 }
   );
 
   videos.forEach((v) => videoObserver.observe(v));
 }
-
 
 // -----------------------------
 // RENDER GALLERY ROWS
@@ -355,7 +341,6 @@ function renderProjects(projects) {
       if (type === "video") {
         const video = document.createElement("video");
 
-        // Use Mux HLS URL if we have it, otherwise fall back to rawSrc
         if (muxId) {
           const source = document.createElement("source");
           source.src = `https://stream.mux.com/${muxId}.m3u8`;
@@ -365,7 +350,6 @@ function renderProjects(projects) {
           video.src = rawSrc;
         }
 
-        // optional poster from Sanity → gives you a real thumbnail
         if (poster) {
           const sep = poster.includes("?") ? "&" : "?";
           const targetW = isMobile ? 500 : 1500;
@@ -387,19 +371,16 @@ function renderProjects(projects) {
         // hint to browsers
         video.autoplay = true;
         video.setAttribute("autoplay", "");
-
-        // more eager preload so we actually get a visible first frame on mobile
         video.preload = "auto";
 
-        video.controls = false;   // no native UI
+        video.controls = false;
 
-        // 🚫 prevent tiny/shrunken layout before we know dimensions
+        // 🔧 IMPORTANT: make sure it fills the cell from the very start
         video.style.display   = "block";
         video.style.width     = "100%";
         video.style.height    = "100%";
         video.style.objectFit = "cover";
 
-        // Small nudge to force iOS to paint a frame if needed
         video.addEventListener(
           "loadeddata",
           () => {
@@ -407,14 +388,11 @@ function renderProjects(projects) {
               if (video.currentTime === 0) {
                 video.currentTime = 0.01;
               }
-            } catch (_) {
-              // ignore
-            }
+            } catch (_) {}
           },
           { once: true }
         );
 
-        // Optional: tap to pause/resume on mobile
         if (!mqHoverDesktop.matches) {
           video.addEventListener("click", () => {
             if (video.paused) {
@@ -429,16 +407,13 @@ function renderProjects(projects) {
       } else {
         const img = document.createElement("img");
         const sep = rawSrc && rawSrc.includes("?") ? "&" : "?";
-
-        // slightly reduced width + quality for bandwidth
         const targetW = isMobile ? 500 : 1500;
         img.src = rawSrc
           ? `${rawSrc}${sep}w=${targetW}&auto=format&q=65`
           : "";
-
         img.loading = "lazy";
 
-        // 🚫 prevent tiny / off-to-the-side flicker
+        // 🔧 same: fill the cell immediately, no tiny image phase
         img.style.display   = "block";
         img.style.width     = "100%";
         img.style.height    = "100%";
@@ -456,7 +431,6 @@ function renderProjects(projects) {
     const mediaCount = (project.media || []).length;
     projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
 
-    // mark projects that actually have horizontal content
     if (mediaCount > 1) {
       projectEl.classList.add("has-multiple");
     }
@@ -464,19 +438,17 @@ function renderProjects(projects) {
     main.appendChild(projectEl);
   });
 
-  // 1️⃣ First pass: give rows some height right away
+  // 1) quick first pass
   setProjectHeights();
 
-  // 2️⃣ Second pass: after media had a moment to report dimensions,
-  //    recompute heights and THEN start auto-scroll + autoplay.
+  // 2) after media has a moment, refine heights + init scroll/autoplay
   setTimeout(() => {
     setProjectHeights();
     setupAutoScrollHints();
     updateAutoScrollFromScroll(lastKnownScrollY || 0);
     setupVideoAutoplay();
-  }, 300);
+  }, 250);
 }
-
 
 // -----------------------------
 // MATCH ROW HEIGHT TO FIRST IMAGE
@@ -484,15 +456,14 @@ function renderProjects(projects) {
 function setProjectHeights() {
   const projects = document.querySelectorAll(".project");
 
-  projects.forEach(projectEl => {
+  projects.forEach((projectEl) => {
     const firstMedia = projectEl.querySelector(
       ".project-item:first-child img, .project-item:first-child video"
     );
     if (!firstMedia) return;
 
+    // let media be controlled by CSS; we only control row height
     projectEl.style.height = "auto";
-    firstMedia.style.width = "";
-    firstMedia.style.height = "";
 
     function applyHeightFromDimensions(naturalW, naturalH) {
       if (!naturalW || !naturalH) return;
@@ -506,8 +477,6 @@ function setProjectHeights() {
       const targetHeight = Math.round(rowWidth * ratio);
 
       projectEl.style.height = targetHeight + "px";
-      firstMedia.style.width = rowWidth + "px";
-      firstMedia.style.height = targetHeight + "px";
     }
 
     if (firstMedia.tagName === "IMG") {
@@ -541,7 +510,7 @@ window.addEventListener("resize", setProjectHeights);
 // LOAD PROJECTS FROM SANITY
 // -----------------------------
 async function loadProjectsFromSanity() {
-  const projectId  = "hk21ncs5";       // your project id
+  const projectId  = "hk21ncs5";
   const dataset    = "production";
   const apiVersion = "2023-05-03";
 
@@ -578,15 +547,19 @@ async function loadProjectsFromSanity() {
 
     renderProjects(projects);
 
-    setTimeout(setProjectHeights, 600);
+    // extra safety pass a bit later for slow networks
+    setTimeout(() => {
+      setProjectHeights();
+      setupAutoScrollHints();
+      updateAutoScrollFromScroll(lastKnownScrollY || 0);
+      setupVideoAutoplay();
+    }, 800);
   } catch (err) {
     console.error("Error loading projects from Sanity:", err);
   }
 }
 
-// When coming back from the Index page (via back/forward cache),
-// the JS doesn't re-run automatically. Force a fresh gallery render
-// so auto-scroll + video hover/tap re-initialize correctly.
+// When coming back from the Index page via back/forward cache
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     loadProjectsFromSanity();
