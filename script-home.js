@@ -439,9 +439,9 @@ function renderProjects(projects) {
       } else {
         const img = document.createElement("img");
         const sep = rawSrc && rawSrc.includes("?") ? "&" : "?";
-        const targetW = isMobile ? 500 : 1500;
+        const targetW = isMobile ? 800 : 1700;
         img.src = rawSrc
-          ? `${rawSrc}${sep}w=${targetW}&auto=format&q=65`
+          ? `${rawSrc}${sep}w=${targetW}&auto=format&q=80`
           : "";
         img.loading = "lazy";
 
