@@ -128,16 +128,20 @@ body.home-page #nav:not(.pattern-active) #Title {
     height: 100%;          /* fill the row height */
     margin: 0;
     padding: 0;
+     width: 100vw;          /* 👈 add this */
+    overflow: hidden; 
 }
 
 
-/* All media */
+/* All media: always fill the cell, no tiny-in-the-corner phase */
 .project-item img,
 .project-item video {
     display: block;
-    height: 100%;    /* match project row height */
-    width: auto;     /* preserve aspect */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;   /* crop if needed, no black bars */
 }
+
 
 /* First image: full width, sets the height via JS 
 .project-item:first-child img,
