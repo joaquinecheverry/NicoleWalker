@@ -289,16 +289,41 @@ function setupVideoAutoplay() {
       entries.forEach((entry) => {
         const v = entry.target;
         if (entry.isIntersecting) {
+          // Autoplay when visible (muted, so browsers allow it)
           v.play().catch(() => {});
         } else {
+          // Pause when off screen
           v.pause();
         }
       });
     },
-    { threshold: 0.4 }
+    { threshold: 0.4 } // ~40% visible
   );
 
   videos.forEach((v) => videoObserver.observe(v));
+}
+
+/**
+ * Turn ON sound for all videos after the user has interacted.
+ * Also hides the "press for sound" overlay.
+ */
+function enableSound() {
+  const videos = document.querySelectorAll(".project-item video");
+  videos.forEach((v) => {
+    v.muted = false;
+    v.volume = 1;
+    v.removeAttribute("muted");
+  });
+
+  const prompt = document.getElementById("soundPrompt");
+  if (prompt) {
+    prompt.style.opacity = "0";
+    setTimeout(() => {
+      if (prompt.parentNode) {
+        prompt.parentNode.removeChild(prompt);
+      }
+    }, 250);
+  }
 }
 
 // -----------------------------
@@ -341,6 +366,7 @@ function renderProjects(projects) {
       if (type === "video") {
         const video = document.createElement("video");
 
+        // Use Mux HLS URL when available
         if (muxId) {
           const source = document.createElement("source");
           source.src = `https://stream.mux.com/${muxId}.m3u8`;
@@ -350,6 +376,7 @@ function renderProjects(projects) {
           video.src = rawSrc;
         }
 
+        // Poster thumbnail (gives proper thumbnail + avoids tiny black video)
         if (poster) {
           const sep = poster.includes("?") ? "&" : "?";
           const targetW = isMobile ? 500 : 1500;
@@ -358,29 +385,32 @@ function renderProjects(projects) {
 
         video.loop = true;
 
-        // 🔊 AUDIO ON by default
-        video.muted = false;
-        video.volume = 1;
-        video.removeAttribute("muted");
+        // REQUIRED FOR TRUE AUTOPLAY EVERYWHERE
+        video.muted = true;
+        video.setAttribute("muted", "");
+        video.volume = 0;
 
-        // inline playback on iOS
+        video.autoplay = true;
+        video.setAttribute("autoplay", "");
+
+        // Inline playback (iOS)
         video.playsInline = true;
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
 
-        // ask browser to autoplay with sound (may be blocked by policy)
-        video.autoplay = true;
-        video.setAttribute("autoplay", "");
+        // More eager preload so first frame shows quickly
         video.preload = "auto";
 
+        // No native controls UI
         video.controls = false;
 
-        // fill the cell from the very start
+        // Make sure it fills the cell from the very start
         video.style.display   = "block";
         video.style.width     = "100%";
         video.style.height    = "100%";
         video.style.objectFit = "cover";
 
+        // Force first frame paint (especially on iOS Safari)
         video.addEventListener(
           "loadeddata",
           () => {
@@ -393,14 +423,17 @@ function renderProjects(projects) {
           { once: true }
         );
 
-        // mobile / desktop click: just toggle play/pause
-        video.addEventListener("click", () => {
-          if (video.paused) {
-            video.play().catch(() => {});
-          } else {
+        // Optional: on desktop, allow hover pause/play if you ever want it
+        if (mqHoverDesktop.matches) {
+          video.addEventListener("mouseenter", () => {
+            if (video.paused) {
+              video.play().catch(() => {});
+            }
+          });
+          video.addEventListener("mouseleave", () => {
             video.pause();
-          }
-        });
+          });
+        }
 
         el = video;
       } else {
@@ -412,6 +445,7 @@ function renderProjects(projects) {
           : "";
         img.loading = "lazy";
 
+        // Fill the cell immediately, no tiny image phase
         img.style.display   = "block";
         img.style.width     = "100%";
         img.style.height    = "100%";
@@ -435,6 +469,47 @@ function renderProjects(projects) {
 
     main.appendChild(projectEl);
   });
+
+  // ---------------------------------------
+// ADD "PRESS FOR SOUND" OVERLAY ON FIRST VIDEO
+// ---------------------------------------
+setTimeout(() => {
+  // only if we haven't already added it
+  if (document.getElementById("soundPrompt")) return;
+
+  const firstVideo = document.querySelector(".project-item video");
+  if (!firstVideo) return;
+
+  // attach to the exact cell that holds the first video
+  const parentCell = firstVideo.closest(".project-item");
+  if (!parentCell) return;
+
+  // ensure the cell can position the overlay
+  parentCell.style.position = "relative";
+
+  const overlay = document.createElement("div");
+  overlay.id = "soundPrompt";
+  overlay.innerText = "press for sound";
+
+  // center inside the video cell
+  overlay.style.position = "absolute";
+  overlay.style.left = "50%";
+  overlay.style.top = "50%";
+  overlay.style.transform = "translate(-50%, -50%)";
+  overlay.style.background = "rgba(0,0,0,0.6)";
+  overlay.style.color = "white";
+  overlay.style.padding = "6px 10px";
+  overlay.style.fontSize = "11px";
+  overlay.style.letterSpacing = "0.5px";
+  overlay.style.borderRadius = "4px";
+  overlay.style.zIndex = "9999";
+  overlay.style.pointerEvents = "none";
+  overlay.style.opacity = "1";
+  overlay.style.transition = "opacity 0.25s ease";
+
+  parentCell.appendChild(overlay);
+}, 100);
+
 
   // 1) quick first pass
   setProjectHeights();
@@ -501,6 +576,15 @@ function setProjectHeights() {
     }
   });
 }
+
+// On the first click/tap anywhere on the page, turn sound on for all videos
+document.addEventListener(
+  "click",
+  () => {
+    enableSound();   // unmute all videos + hide overlay
+  },
+  { once: true }      // only run this once
+);
 
 window.addEventListener("resize", setProjectHeights);
 
