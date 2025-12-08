@@ -9,23 +9,60 @@ let patternSources = [...localPatternImages].sort(() => Math.random() - 0.5);
 
 // 🔧 TUNING CONSTANTS
 // Thumbnails (in memory, BEFORE orbit scaling)
-const THUMB_MAX_DIM_DESKTOP = 100;   // was 60 – sharper thumbs on desktop
-const THUMB_MAX_DIM_MOBILE  = 80;    // was 45 – bigger + crisper on phones
+const THUMB_MAX_DIM_DESKTOP = 100;
+const THUMB_MAX_DIM_MOBILE  = 80;
 
 // Full-image max size for zoom
-const MAX_FULL_DIM_DESKTOP = 1700;   // bump for sharper full-screen
+const MAX_FULL_DIM_DESKTOP = 1700;
 const MAX_FULL_DIM_MOBILE  = 1100;
 
 // Concurrency: more = faster loading, but more bursty
 const MAX_CONCURRENT_DESKTOP = 4;
 const MAX_CONCURRENT_MOBILE  = 3;
 
+// Sanity config (same project as the rest of the site)
+const SANITY_PROJECT_ID  = "hk21ncs5";
+const SANITY_DATASET     = "production";
+const SANITY_API_VERSION = "2023-05-03";
+
 // p5 instance
 let patternSketch = null;
 
+// --------------------------------------------------
+// FETCH INDEX SETTINGS FROM SANITY
+// --------------------------------------------------
+async function fetchIndexSettingsFromSanity() {
+  const query = `
+    *[_type == "indexSettings"][0]{
+      // try both possible field names
+      xPatternMultiplier,
+      yPatternMultiplier,
+      xPattern,
+      yPattern,
+      radiusX,
+      radiusY
+    }
+  `;
+  const encoded = encodeURIComponent(query);
+  const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encoded}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const settings = data.result || null;
+
+    console.log("Index settings from Sanity:", settings); // 👈 debug
+    return settings;
+  } catch (err) {
+    console.error("Failed to fetch index settings from Sanity:", err);
+    return null;
+  }
+}
+
+
 // ------------- P5 ORBIT VIEW -------------
 
-function initPatternOrbitView() {
+function initPatternOrbitView(settings) {
   const wrap = document.getElementById("pattern-wrapper-index");
   if (!wrap) {
     console.error("pattern-wrapper-index not found");
@@ -45,11 +82,27 @@ function initPatternOrbitView() {
     ? MAX_CONCURRENT_MOBILE
     : MAX_CONCURRENT_DESKTOP;
 
-  // Orbit parameters (same vibe as before)
-  let xPatternValue = 8;
-  let yPatternValue = 8;
-  let radiusX = 0.45;
-  let radiusY = 0.43;
+  // Orbit parameters — driven by Sanity when present
+  const rawX =
+    settings?.xPatternMultiplier ??
+    settings?.xPattern ??       // fallback field name
+    8;
+
+  const rawY =
+    settings?.yPatternMultiplier ??
+    settings?.yPattern ??       // fallback field name
+    8;
+
+  const rawRadiusX =
+    typeof settings?.radiusX === "number" ? settings.radiusX : 0.45;
+  const rawRadiusY =
+    typeof settings?.radiusY === "number" ? settings.radiusY : 0.43;
+
+  let xPatternValue = Number(rawX);
+  let yPatternValue = Number(rawY);
+  let radiusX       = Number(rawRadiusX);
+  let radiusY       = Number(rawRadiusY);
+
 
   patternSketch = new p5((p) => {
     let imgs = [];             // thumb images
@@ -94,7 +147,6 @@ function initPatternOrbitView() {
           p.loadImage(
             thumbUrl,
             (loadedImg) => {
-              // keep thumbs small but not tiny, so they stay sharp
               if (
                 loadedImg.width > THUMB_MAX_DIM ||
                 loadedImg.height > THUMB_MAX_DIM
@@ -154,12 +206,11 @@ function initPatternOrbitView() {
 
       loadingFullRes = true;
       modalImg = null;
-      const thisIndex = index; // lock index into this closure
+      const thisIndex = index;
 
       p.loadImage(
         fullUrl,
         (loadedImg) => {
-          // cap full image size based on desktop/mobile
           if (
             loadedImg.width > MAX_FULL_DIM ||
             loadedImg.height > MAX_FULL_DIM
@@ -181,70 +232,60 @@ function initPatternOrbitView() {
         (err) => {
           console.error("Failed to load full:", fullUrl, err);
           loadingFullRes = false;
-          // fallback so we don't get stuck on "Loading..."
           modalImg = imgs[thisIndex] || null;
         }
       );
     }
 
-function handleClickOrTap() {
-  // 🔒 If Info overlay is open, DO NOT steal the click.
-  // Let normal links (AMAZE, ART, etc.) behave naturally.
-  const infoPanel = document.getElementById("InfoContent");
-  if (infoPanel && infoPanel.classList.contains("active")) {
-    return; // no `false` here → no preventDefault
-  }
+    function handleClickOrTap() {
+      const infoPanel = document.getElementById("InfoContent");
+      if (infoPanel && infoPanel.classList.contains("active")) {
+        return;
+      }
 
-  // close modal if open
-  if (selectedImage !== null) {
-    selectedImage = null;
-    loadingFullRes = false;
-    modalImg = null;
-    return false; // we handled it
-  }
+      if (selectedImage !== null) {
+        selectedImage = null;
+        loadingFullRes = false;
+        modalImg = null;
+        return false;
+      }
 
-  // otherwise, see if we clicked a thumb
-  for (let i = patternSources.length - 1; i >= 0; i--) {
-    const img = imgs[i];
-    if (!img) continue;
+      for (let i = patternSources.length - 1; i >= 0; i--) {
+        const img = imgs[i];
+        if (!img) continue;
 
-    const pos = i + offset;
-    const x =
-      p.width / 2 +
-      Math.cos((pos * xPatternValue * Math.PI) / patternSources.length) *
-        (p.width * radiusX);
-    const y =
-      p.height / 2 +
-      Math.sin((pos * yPatternValue * Math.PI) / patternSources.length) *
-        (p.height * radiusY);
+        const pos = i + offset;
+        const x =
+          p.width / 2 +
+          Math.cos((pos * xPatternValue * Math.PI) / patternSources.length) *
+            (p.width * radiusX);
+        const y =
+          p.height / 2 +
+          Math.sin((pos * yPatternValue * Math.PI) / patternSources.length) *
+            (p.height * radiusY);
 
-    const maxSize = isMobileScreen ? 60 : 85; // clickable radius
-    const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-    const baseW = img.width * ratio;
-    const baseH = img.height * ratio;
+        const maxSize = isMobileScreen ? 60 : 85;
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+        const baseW = img.width * ratio;
+        const baseH = img.height * ratio;
 
-    const hoverScale = hoverScales[i] || 1;
-    const appear = 1;
-    const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
-    const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
+        const hoverScale = hoverScales[i] || 1;
+        const appear = 1;
+        const w = baseW * (0.8 + 0.2 * appear) * hoverScale;
+        const h = baseH * (0.8 + 0.2 * appear) * hoverScale;
 
-    const dx = p.mouseX - x;
-    const dy = p.mouseY - y;
-    const radius = Math.min(w, h) * 0.4;
+        const dx = p.mouseX - x;
+        const dy = p.mouseY - y;
+        const radius = Math.min(w, h) * 0.4;
 
-    if (dx * dx + dy * dy <= radius * radius) {
-      selectedImage = i;
-      loadFullFor(i);
-      return false; // we handled a thumb click
+        if (dx * dx + dy * dy <= radius * radius) {
+          selectedImage = i;
+          loadFullFor(i);
+          return false;
+        }
+      }
     }
-  }
 
-  // nothing handled → let browser do its thing
-  // (no `false` → no preventDefault)
-}
-
-
-    // 🔑 Use mousePressed for BOTH desktop + mobile taps (styling unchanged)
     p.mousePressed = () => {
       return handleClickOrTap();
     };
@@ -288,9 +329,8 @@ function handleClickOrTap() {
       let anyHovering = false;
 
       const orbitScale = isMobileCanvas ? 0.9 : 1.0;
-      const maxSizeBase = isMobileCanvas ? 36 : 70; // 👈 bigger thumbnails
+      const maxSizeBase = isMobileCanvas ? 36 : 70;
 
-      // For thumbnails, keep performance but use slightly better sizes
       p.smooth();
 
       for (let i = 0; i < patternSources.length; i++) {
@@ -344,13 +384,11 @@ function handleClickOrTap() {
 
       p.noTint();
 
-      // Pointer: thumbs or modal -> pointer, otherwise default
       if (anyHovering || selectedImage !== null) {
         p.cursor("pointer");
       } else {
         p.cursor("default");
       }
-
 
       // ---------- MODAL FULL-SCREEN IMAGE ----------
       if (selectedImage !== null) {
@@ -369,7 +407,6 @@ function handleClickOrTap() {
         const modalH = img.height * ratio;
 
         if (loadingFullRes || !modalImg) {
-          // blurred preview while full res loads
           p.drawingContext.filter = "blur(8px)";
           p.smooth();
           p.imageMode(p.CENTER);
@@ -381,7 +418,6 @@ function handleClickOrTap() {
           p.text("Loading...", p.width / 2, p.height / 2);
           p.noSmooth();
         } else {
-          // final full-res: smoothing ON so it’s not pixelated
           p.smooth();
           p.imageMode(p.CENTER);
           p.image(modalImg, p.width / 2, p.height / 2, modalW, modalH);
@@ -394,7 +430,7 @@ function handleClickOrTap() {
 
 // ------------- BOOT -------------
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // Info toggle for INDEX page (mirror home)
   const infoBtn   = document.getElementById("InfoButton");
   const infoPanel = document.getElementById("InfoContent");
@@ -415,6 +451,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // orbit init
-  initPatternOrbitView();
+  // 1) fetch settings from Sanity
+  const settings = await fetchIndexSettingsFromSanity();
+  // 2) init orbit with those settings (fallback to defaults if null)
+  initPatternOrbitView(settings);
 });
