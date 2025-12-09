@@ -128,10 +128,9 @@ body.home-page #nav:not(.pattern-active) #Title {
     height: 100%;          /* fill the row height */
     margin: 0;
     padding: 0;
-    width: auto;           /* JS will set an exact width per item */
-    overflow: hidden;
+    width: 100vw;          /* 👈 this is causing the issues */
+    overflow: hidden; 
 }
-
 
 
 
@@ -757,10 +756,4 @@ body::-webkit-scrollbar {
 
 #InfoContent::-webkit-scrollbar {
   display: none;
-}
-
-/* Start videos invisible; JS will fade them in after loadedmetadata */
-.project-item video {
-    opacity: 0;
-    transition: opacity 0.25s ease;
 }
