@@ -128,9 +128,11 @@ body.home-page #nav:not(.pattern-active) #Title {
     height: 100%;          /* fill the row height */
     margin: 0;
     padding: 0;
-     width: 100vw;          /* 👈 add this */
-    overflow: hidden; 
+    width: auto;           /* JS will set an exact width per item */
+    overflow: hidden;
 }
+
+
 
 
 /* All media: always fill the cell, no tiny-in-the-corner phase */
@@ -755,4 +757,10 @@ body::-webkit-scrollbar {
 
 #InfoContent::-webkit-scrollbar {
   display: none;
+}
+
+/* Start videos invisible; JS will fade them in after loadedmetadata */
+.project-item video {
+    opacity: 0;
+    transition: opacity 0.25s ease;
 }

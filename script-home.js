@@ -530,15 +530,16 @@ function setProjectHeights() {
   const projects = document.querySelectorAll(".project");
 
   projects.forEach((projectEl) => {
-    const firstMedia = projectEl.querySelector(
-      ".project-item:first-child img, .project-item:first-child video"
-    );
+    const items = projectEl.querySelectorAll(".project-item");
+    if (!items.length) return;
+
+    const firstMedia = items[0].querySelector("img, video");
     if (!firstMedia) return;
 
-    // let media be controlled by CSS; we only control row height
+    // reset so we can recalc
     projectEl.style.height = "auto";
 
-    function applyHeightFromDimensions(naturalW, naturalH) {
+    function applyHeightsFromFirst(naturalW, naturalH) {
       if (!naturalW || !naturalH) return;
 
       const rowWidth =
@@ -547,35 +548,62 @@ function setProjectHeights() {
         document.documentElement.clientWidth;
 
       const ratio = naturalH / naturalW;
-      const targetHeight = Math.round(rowWidth * ratio);
+      const rowHeight = Math.round(rowWidth * ratio);
 
-      projectEl.style.height = targetHeight + "px";
+      // 1) fix the row height from the first image
+      projectEl.style.height = rowHeight + "px";
+
+      // 2) make EVERY item in this row share that height,
+      //    and set its width based on its own aspect ratio
+      items.forEach((item) => {
+        const media = item.querySelector("img, video");
+        if (!media) return;
+
+        let mw, mh;
+
+        if (media.tagName === "IMG") {
+          mw = media.naturalWidth;
+          mh = media.naturalHeight;
+        } else {
+          mw = media.videoWidth;
+          mh = media.videoHeight;
+        }
+
+        if (!mw || !mh) return;
+
+        const aspect = mw / mh;
+        const itemWidth = Math.round(rowHeight * aspect);
+
+        item.style.width = itemWidth + "px";   // 👈 side-by-side, same height
+      });
     }
 
+    // First media might not be loaded yet → same logic as before
     if (firstMedia.tagName === "IMG") {
       if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
-        applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
+        applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight);
       } else {
         firstMedia.addEventListener(
           "load",
-          () => applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight),
+          () => applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight),
           { once: true }
         );
       }
     } else if (firstMedia.tagName === "VIDEO") {
       const video = firstMedia;
       if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
-        applyHeightFromDimensions(video.videoWidth, video.videoHeight);
+        applyHeightsFromFirst(video.videoWidth, video.videoHeight);
       } else {
         video.addEventListener(
           "loadedmetadata",
-          () => applyHeightFromDimensions(video.videoWidth, video.videoHeight),
+          () => applyHeightsFromFirst(video.videoWidth, video.videoHeight),
           { once: true }
         );
       }
     }
   });
 }
+
 
 // On the first click/tap anywhere on the page, turn sound on for all videos
 document.addEventListener(
