@@ -373,7 +373,6 @@ const isMobileLike = isMobile || window.matchMedia("(pointer: coarse)").matches;
       const first = media[0];
       if (
         first &&
-        first.type === "image" &&
         typeof first.width === "number" &&
         typeof first.height === "number"
       ) {
@@ -713,7 +712,10 @@ async function loadProjectsFromSanity() {
   _type == "videoItem" => {
     "type": "video",
     "muxPlaybackId": muxVideo.asset->playbackId,
-    "posterUrl": poster.asset->url
+    "posterUrl": poster.asset->url,
+    //use poster's dimensions so we know aspect ratio before video loads
+    "width": poster.asset->metadata.dimensions.width,
+    "height": poster.asset->metadata.dimensions.height
   }
 }
 
