@@ -132,6 +132,13 @@ body.home-page #nav:not(.pattern-active) #Title {
     overflow: hidden; 
 }
 
+/* Single-item rows: make the one media cell fill the width
+   so videos don't start tiny on first paint */
+.project.single-item .project-item {
+    width: 100%;
+}
+
+
 /* Desktop-only: rows that are 3× copies of one portrait */
 /* Desktop-only: rows that are 3× copies of one portrait */
 @media (min-width: 769px) {

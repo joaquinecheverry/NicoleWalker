@@ -485,7 +485,10 @@ const isMobileLike = isMobile || window.matchMedia("(pointer: coarse)").matches;
       projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
       if (mediaCount > 1) {
         projectEl.classList.add("has-multiple");
-      }
+      } else if (mediaCount === 1) {
+    // mark rows that have exactly one item (no triptych)
+    projectEl.classList.add("single-item");
+  }
     }
 
     main.appendChild(projectEl);
@@ -559,21 +562,16 @@ function setProjectHeights() {
       // SPECIAL CASE: TRIPTYCH ROW (3x)
       // -------------------------------
       if (isTriptych && items.length === 3) {
-        // start with ~60% of viewport height
         let rowHeight = (window.innerHeight || rowWidth) * 1;
 
-        // width of one image at that height
         let itemWidth = rowHeight * (naturalW / naturalH);
-
-        // total width for 3 copies
         let totalWidth = itemWidth * 3;
 
-        // If they don't fit, scale height & width down proportionally
         if (totalWidth > rowWidth) {
           const scale = rowWidth / totalWidth;
           rowHeight *= scale;
           itemWidth *= scale;
-          totalWidth = rowWidth; // now it fits exactly
+          totalWidth = rowWidth;
         }
 
         projectEl.style.height = rowHeight + "px";
@@ -585,16 +583,15 @@ function setProjectHeights() {
           if (media) {
             media.style.width = "100%";
             media.style.height = "100%";
-            media.style.objectFit = "contain"; // no cropping
+            media.style.objectFit = "contain";
           }
         });
 
-        return; // done with triptych logic
+        return;
       }
 
       // -------------------------------
-      // NORMAL ROWS (existing behavior,
-      // but make all items share height)
+      // NORMAL ROWS (IMAGES + VIDEOS)
       // -------------------------------
       const rowHeight = Math.round(rowWidth * (naturalH / naturalW));
       projectEl.style.height = rowHeight + "px";
@@ -611,7 +608,13 @@ function setProjectHeights() {
           mw = media.videoWidth;
           mh = media.videoHeight;
         }
-        if (!mw || !mh) return;
+
+        // if this particular media doesn't have real dims yet,
+        // just use the first's ratio as a fallback
+        if (!mw || !mh) {
+          mw = naturalW;
+          mh = naturalH;
+        }
 
         const itemWidth = Math.round(rowHeight * (mw / mh));
 
@@ -632,20 +635,28 @@ function setProjectHeights() {
           { once: true }
         );
       }
-    } else if (firstMedia.tagName === "VIDEO") {
-      const video = firstMedia;
-      if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
-        applyHeightsFromFirst(video.videoWidth, video.videoHeight);
-      } else {
-        video.addEventListener(
-          "loadedmetadata",
-          () => applyHeightsFromFirst(video.videoWidth, video.videoHeight),
-          { once: true }
-        );
-      }
-    }
+} else if (firstMedia.tagName === "VIDEO") {
+  const video = firstMedia;
+
+  // Only set row height once we know the real video dimensions
+  if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
+    applyHeightsFromFirst(video.videoWidth, video.videoHeight);
+  } else {
+    video.addEventListener(
+      "loadedmetadata",
+      () => {
+        if (video.videoWidth && video.videoHeight) {
+          applyHeightsFromFirst(video.videoWidth, video.videoHeight);
+        }
+      },
+      { once: true }
+    );
+  }
+}
+
   });
 }
+
 
 
 
