@@ -492,6 +492,26 @@ const isMobileLike = isMobile || window.matchMedia("(pointer: coarse)").matches;
 
     const mediaCount = media.length;
 
+        //  detect "one video only" rows
+    const isSingleVideoRow =
+      mediaCount === 1 && media[0] && media[0].type === "video";
+
+    if (isSingleVideoRow) {
+      projectEl.classList.add("single-video-row");
+
+      const vw = media[0].width;
+      const vh = media[0].height;
+
+      // If we have poster dimensions from Sanity, use them
+      if (vw && vh) {
+        // aspect-ratio: width / height
+        projectEl.style.aspectRatio = `${vw} / ${vh}`;
+      } else {
+        // fallback if no metadata
+        projectEl.style.aspectRatio = "16 / 9";
+      }
+    }
+
     // For triptych rows we *don’t* want horizontal scrolling or auto-scroll hints
     if (isTriptychRow) {
       projectEl.style.overflowX = "hidden";
@@ -558,6 +578,19 @@ function setProjectHeights() {
   projects.forEach((projectEl) => {
     const items = projectEl.querySelectorAll(".project-item");
     if (!items.length) return;
+
+        // 👇 NEW: let CSS aspect-ratio handle single video rows
+    if (projectEl.classList.contains("single-video-row")) {
+      projectEl.style.height = "auto";
+      items.forEach((item) => {
+        const media = item.querySelector("img, video");
+        if (media) {
+          media.style.width = "100%";
+          media.style.height = "100%";
+        }
+      });
+      return;
+    }
 
     const firstMedia = items[0].querySelector("img, video");
     if (!firstMedia) return;
@@ -633,7 +666,7 @@ function setProjectHeights() {
       });
     }
 
-    // 🔴 NEW: if we have width/height metadata from Sanity, use it immediately.
+    // if we have width/height metadata from Sanity, use it immediately.
     const metaW = parseFloat(projectEl.dataset.firstW || "");
     const metaH = parseFloat(projectEl.dataset.firstH || "");
     if (metaW && metaH) {
