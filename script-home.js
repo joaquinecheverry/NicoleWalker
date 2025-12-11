@@ -344,12 +344,13 @@ function renderProjects(projects) {
     const mqHoverDesktop = window.matchMedia(
       "(hover: hover) and (pointer: fine)"
     );
-
+const isMobileLike = isMobile || window.matchMedia("(pointer: coarse)").matches;
     // ---- NEW: build the media list we actually render ----
     let media = project.media || [];
     let isTriptychRow = false;
 
-    if (!isMobile && media.length === 1) {
+    if (!isMobileLike && media.length === 1) {
+
       const only = media[0];
 
       const isPortrait =
