@@ -340,35 +340,35 @@ function renderProjects(projects) {
     const track = document.createElement("div");
     track.classList.add("project-track");
 
-    const isMobile = window.innerWidth <= 768;
-    const mediaOriginal = project.media || [];
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const mqHoverDesktop = window.matchMedia(
+      "(hover: hover) and (pointer: fine)"
+    );
 
-    // ---------- DESKTOP-ONLY TRIPTYCH LOGIC ----------
-    // If we're on desktop and this row has exactly 1 IMAGE,
-    // render it 3 times and mark the row as "triptych".
-    const isDesktopLike = window.innerWidth >= 900;
-    let mediaToRender = mediaOriginal;
+    // ---- NEW: build the media list we actually render ----
+    let media = project.media || [];
     let isTriptychRow = false;
 
-    if (isDesktopLike && mediaOriginal.length === 1) {
-      const single = mediaOriginal[0];
-      const isString = typeof single === "string";
-      const rawSrc   = isString ? single : single.url;
-      const type     = isString
-        ? (rawSrc && (rawSrc.endsWith(".mp4") || rawSrc.endsWith(".webm") ? "video" : "image"))
-        : (single.type || "image");
+    if (!isMobile && media.length === 1) {
+      const only = media[0];
 
-      if (type === "image") {
-        mediaToRender = [single, single, single]; // 👈 make the triptych
+      const isPortrait =
+        only &&
+        only.type === "image" &&
+        typeof only.width === "number" &&
+        typeof only.height === "number" &&
+        only.height > only.width;
+
+      if (isPortrait) {
+        // duplicate 3× for desktop triptych
+        media = [only, only, only];
         isTriptychRow = true;
         projectEl.classList.add("triptych-row");
       }
     }
 
-    // ----------------------------------------------
-    // BUILD CELLS (using mediaToRender, not original)
-    // ----------------------------------------------
-    mediaToRender.forEach((item) => {
+    // ---- use `media` from here on ----
+    media.forEach((item) => {
       const isString = typeof item === "string";
       const rawSrc   = isString ? item : item.url;
       const muxId    = !isString ? item.muxPlaybackId : null;
@@ -383,11 +383,6 @@ function renderProjects(projects) {
 
       const cell = document.createElement("div");
       cell.classList.add("project-item");
-
-      // for triptych rows, force each cell to be 1/3 of the row
-      if (isTriptychRow) {
-        cell.style.flex = "0 0 calc(100% / 3)";
-      }
 
       let el;
 
@@ -420,7 +415,6 @@ function renderProjects(projects) {
         video.setAttribute("webkit-playsinline", "");
         video.preload = "auto";
         video.controls = false;
-
         video.style.display   = "block";
         video.style.width     = "100%";
         video.style.height    = "100%";
@@ -438,6 +432,17 @@ function renderProjects(projects) {
           { once: true }
         );
 
+        if (mqHoverDesktop.matches) {
+          video.addEventListener("mouseenter", () => {
+            if (video.paused) {
+              video.play().catch(() => {});
+            }
+          });
+          video.addEventListener("mouseleave", () => {
+            video.pause();
+          });
+        }
+
         el = video;
       } else {
         const img = document.createElement("img");
@@ -448,13 +453,21 @@ function renderProjects(projects) {
           : "";
         img.loading = "lazy";
 
-        img.style.display   = "block";
-        img.style.width     = "100%";
-        img.style.height    = "100%";
-        img.style.objectFit = "cover";
+        // Fill the cell immediately
+        img.style.display = "block";
+        img.style.width   = "100%";
+        img.style.height  = "100%";
+
+        // For desktop triptych rows, avoid cropping: contain
+        if (!isMobile && projectEl.classList.contains("triptych-row")) {
+          img.style.objectFit = "contain";
+        } else {
+          img.style.objectFit = "cover";
+        }
 
         el = img;
       }
+
 
       cell.appendChild(el);
       track.appendChild(cell);
@@ -462,38 +475,33 @@ function renderProjects(projects) {
 
     projectEl.appendChild(track);
 
-    const mediaCount = mediaToRender.length;
+    const mediaCount = media.length;
 
-    // For triptych rows we DON'T want horizontal scroll
+    // For triptych rows we *don’t* want horizontal scrolling or auto-scroll hints
     if (isTriptychRow) {
       projectEl.style.overflowX = "hidden";
     } else {
       projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
-    }
-
-    if (mediaCount > 1) {
-      projectEl.classList.add("has-multiple");
+      if (mediaCount > 1) {
+        projectEl.classList.add("has-multiple");
+      }
     }
 
     main.appendChild(projectEl);
   });
 
-  // "press for sound" overlay stays unchanged
+  // PRESS FOR SOUND overlay (unchanged)
   setTimeout(() => {
     if (document.getElementById("soundPrompt")) return;
-
     const firstVideo = document.querySelector(".project-item video");
     if (!firstVideo) return;
-
     const parentCell = firstVideo.closest(".project-item");
     if (!parentCell) return;
-
     parentCell.style.position = "relative";
 
     const overlay = document.createElement("div");
     overlay.id = "soundPrompt";
     overlay.innerText = "press for sound";
-
     overlay.style.position = "absolute";
     overlay.style.left = "50%";
     overlay.style.top = "50%";
@@ -512,10 +520,8 @@ function renderProjects(projects) {
     parentCell.appendChild(overlay);
   }, 100);
 
-  // 1) quick first pass
   setProjectHeights();
 
-  // 2) after media has a moment, refine heights + init scroll/autoplay
   setTimeout(() => {
     setProjectHeights();
     setupAutoScrollHints();
@@ -525,7 +531,6 @@ function renderProjects(projects) {
 }
 
 
-
 // -----------------------------
 // MATCH ROW HEIGHT TO FIRST IMAGE
 // -----------------------------
@@ -533,14 +538,15 @@ function setProjectHeights() {
   const projects = document.querySelectorAll(".project");
 
   projects.forEach((projectEl) => {
-    const firstMedia = projectEl.querySelector(
-      ".project-item:first-child img, .project-item:first-child video"
-    );
+    const items = projectEl.querySelectorAll(".project-item");
+    if (!items.length) return;
+
+    const firstMedia = items[0].querySelector("img, video");
     if (!firstMedia) return;
 
-    projectEl.style.height = "auto";
+    const isTriptych = projectEl.classList.contains("triptych-row");
 
-    function applyHeightFromDimensions(naturalW, naturalH) {
+    function applyHeightsFromFirst(naturalW, naturalH) {
       if (!naturalW || !naturalH) return;
 
       const rowWidth =
@@ -548,55 +554,97 @@ function setProjectHeights() {
         window.innerWidth ||
         document.documentElement.clientWidth;
 
-      const ratio = naturalH / naturalW;
-      let targetHeight;
+      // -------------------------------
+      // SPECIAL CASE: TRIPTYCH ROW (3x)
+      // -------------------------------
+      if (isTriptych && items.length === 3) {
+        // start with ~60% of viewport height
+        let rowHeight = (window.innerHeight || rowWidth) * 1;
 
-      if (projectEl.classList.contains("triptych-row") && window.innerWidth >= 900) {
-        // 👉 desktop triptych: 3 images across → each is 1/3 width
-        targetHeight = Math.round((rowWidth / 3) * ratio);
+        // width of one image at that height
+        let itemWidth = rowHeight * (naturalW / naturalH);
 
-        // enforce 1/3 width per cell
-        const cells = projectEl.querySelectorAll(".project-item");
-        cells.forEach((cell) => {
-          cell.style.flex = "0 0 calc(100% / 3)";
+        // total width for 3 copies
+        let totalWidth = itemWidth * 3;
+
+        // If they don't fit, scale height & width down proportionally
+        if (totalWidth > rowWidth) {
+          const scale = rowWidth / totalWidth;
+          rowHeight *= scale;
+          itemWidth *= scale;
+          totalWidth = rowWidth; // now it fits exactly
+        }
+
+        projectEl.style.height = rowHeight + "px";
+
+        items.forEach((item) => {
+          item.style.width = itemWidth + "px";
+
+          const media = item.querySelector("img, video");
+          if (media) {
+            media.style.width = "100%";
+            media.style.height = "100%";
+            media.style.objectFit = "contain"; // no cropping
+          }
         });
-      } else {
-        // normal rows: first image sets the whole row height
-        targetHeight = Math.round(rowWidth * ratio);
+
+        return; // done with triptych logic
       }
 
-      projectEl.style.height = targetHeight + "px";
+      // -------------------------------
+      // NORMAL ROWS (existing behavior,
+      // but make all items share height)
+      // -------------------------------
+      const rowHeight = Math.round(rowWidth * (naturalH / naturalW));
+      projectEl.style.height = rowHeight + "px";
+
+      items.forEach((item) => {
+        const media = item.querySelector("img, video");
+        if (!media) return;
+
+        let mw, mh;
+        if (media.tagName === "IMG") {
+          mw = media.naturalWidth;
+          mh = media.naturalHeight;
+        } else {
+          mw = media.videoWidth;
+          mh = media.videoHeight;
+        }
+        if (!mw || !mh) return;
+
+        const itemWidth = Math.round(rowHeight * (mw / mh));
+
+        item.style.width = itemWidth + "px";
+        media.style.width = "100%";
+        media.style.height = "100%";
+        media.style.objectFit = "cover";
+      });
     }
 
     if (firstMedia.tagName === "IMG") {
       if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
-        applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
+        applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight);
       } else {
         firstMedia.addEventListener(
           "load",
-          () =>
-            applyHeightFromDimensions(
-              firstMedia.naturalWidth,
-              firstMedia.naturalHeight
-            ),
+          () => applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight),
           { once: true }
         );
       }
     } else if (firstMedia.tagName === "VIDEO") {
       const video = firstMedia;
       if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
-        applyHeightFromDimensions(video.videoWidth, video.videoHeight);
+        applyHeightsFromFirst(video.videoWidth, video.videoHeight);
       } else {
         video.addEventListener(
           "loadedmetadata",
-          () => applyHeightFromDimensions(video.videoWidth, video.videoHeight),
+          () => applyHeightsFromFirst(video.videoWidth, video.videoHeight),
           { once: true }
         );
       }
     }
   });
 }
-
 
 
 
