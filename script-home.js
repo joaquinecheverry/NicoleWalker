@@ -368,6 +368,21 @@ const isMobileLike = isMobile || window.matchMedia("(pointer: coarse)").matches;
       }
     }
 
+        // Store first image dimensions from Sanity so we can set row height
+    if (media.length > 0) {
+      const first = media[0];
+      if (
+        first &&
+        first.type === "image" &&
+        typeof first.width === "number" &&
+        typeof first.height === "number"
+      ) {
+        projectEl.dataset.firstW = String(first.width);
+        projectEl.dataset.firstH = String(first.height);
+      }
+    }
+
+
     // ---- use `media` from here on ----
     media.forEach((item) => {
       const isString = typeof item === "string";
@@ -591,7 +606,7 @@ function setProjectHeights() {
       }
 
       // -------------------------------
-      // NORMAL ROWS (IMAGES + VIDEOS)
+      // NORMAL ROWS: same height for all
       // -------------------------------
       const rowHeight = Math.round(rowWidth * (naturalH / naturalW));
       projectEl.style.height = rowHeight + "px";
@@ -608,13 +623,7 @@ function setProjectHeights() {
           mw = media.videoWidth;
           mh = media.videoHeight;
         }
-
-        // if this particular media doesn't have real dims yet,
-        // just use the first's ratio as a fallback
-        if (!mw || !mh) {
-          mw = naturalW;
-          mh = naturalH;
-        }
+        if (!mw || !mh) return;
 
         const itemWidth = Math.round(rowHeight * (mw / mh));
 
@@ -625,35 +634,45 @@ function setProjectHeights() {
       });
     }
 
+    // 🔴 NEW: if we have width/height metadata from Sanity, use it immediately.
+    const metaW = parseFloat(projectEl.dataset.firstW || "");
+    const metaH = parseFloat(projectEl.dataset.firstH || "");
+    if (metaW && metaH) {
+      applyHeightsFromFirst(metaW, metaH);
+      return; // no need to wait for image/video to load
+    }
+
+    // Fallback: existing behavior if metadata is missing
     if (firstMedia.tagName === "IMG") {
       if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
         applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight);
       } else {
         firstMedia.addEventListener(
           "load",
-          () => applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight),
+          () =>
+            applyHeightsFromFirst(
+              firstMedia.naturalWidth,
+              firstMedia.naturalHeight
+            ),
           { once: true }
         );
       }
-} else if (firstMedia.tagName === "VIDEO") {
-  const video = firstMedia;
-
-  // Only set row height once we know the real video dimensions
-  if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
-    applyHeightsFromFirst(video.videoWidth, video.videoHeight);
-  } else {
-    video.addEventListener(
-      "loadedmetadata",
-      () => {
-        if (video.videoWidth && video.videoHeight) {
-          applyHeightsFromFirst(video.videoWidth, video.videoHeight);
-        }
-      },
-      { once: true }
-    );
-  }
-}
-
+    } else if (firstMedia.tagName === "VIDEO") {
+      const video = firstMedia;
+      if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
+        applyHeightsFromFirst(video.videoWidth, video.videoHeight);
+      } else {
+        video.addEventListener(
+          "loadedmetadata",
+          () =>
+            applyHeightsFromFirst(
+              video.videoWidth,
+              video.videoHeight
+            ),
+          { once: true }
+        );
+      }
+    }
   });
 }
 
