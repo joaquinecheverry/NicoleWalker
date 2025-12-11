@@ -99,18 +99,17 @@ function setupAutoScrollHints() {
     const isMobile = window.innerWidth <= 768;
     let amplitude;
 
-  
     if (maxScroll <= 40) {
       // very small overflow: allow full travel
       amplitude = maxScroll;
     } else {
       if (isMobile) {
         // MOBILE: very subtle hint
-        const factor = 0.15 + Math.random() * 0.1; // 0.15–0.25 (reduced)
-        amplitude = Math.min(maxScroll * factor, 40);
+        const factor = 0.25 + Math.random() * 0.2; // 0.25–0.45
+        amplitude = Math.min(maxScroll * factor, 20);
       } else {
-        // DESKTOP: subtle peek at next image
-        const factor = 0.20 + Math.random() * 0.15; // 0.20–0.35 (reduced)
+        // DESKTOP: noticeable but not too much
+        const factor = 0.45 + Math.random() * 0.25; // 0.45–0.70
         amplitude = Math.min(maxScroll * factor, 50);
       }
     }
@@ -230,9 +229,6 @@ function updateAutoScrollFromScroll(passedScrollY) {
   });
 }
 
-// -----------------------------
-// SMOOTH ANIMATION TOWARD TARGET
-// -----------------------------
 // -----------------------------
 // SMOOTH ANIMATION TOWARD TARGET
 // -----------------------------
@@ -359,7 +355,22 @@ function renderProjects(projects) {
       "(hover: hover) and (pointer: fine)"
     );
 
-    (project.media || []).forEach((item) => {
+    const media = project.media || [];
+
+    // Store first image dimensions from Sanity so we can set row height
+    if (media.length > 0) {
+      const first = media[0];
+      if (
+        first &&
+        typeof first.width === "number" &&
+        typeof first.height === "number"
+      ) {
+        projectEl.dataset.firstW = String(first.width);
+        projectEl.dataset.firstH = String(first.height);
+      }
+    }
+
+    media.forEach((item) => {
       const isString = typeof item === "string";
       const rawSrc   = isString ? item : item.url;
       const muxId    = !isString ? item.muxPlaybackId : null;
@@ -380,7 +391,6 @@ function renderProjects(projects) {
       if (type === "video") {
         const video = document.createElement("video");
 
-        // Use Mux HLS URL when available
         if (muxId) {
           const source = document.createElement("source");
           source.src = `https://stream.mux.com/${muxId}.m3u8`;
@@ -390,7 +400,6 @@ function renderProjects(projects) {
           video.src = rawSrc;
         }
 
-        // Poster thumbnail (gives proper thumbnail + avoids tiny black video)
         if (poster) {
           const sep = poster.includes("?") ? "&" : "?";
           const targetW = isMobile ? 500 : 1500;
@@ -398,33 +407,21 @@ function renderProjects(projects) {
         }
 
         video.loop = true;
-
-        // REQUIRED FOR TRUE AUTOPLAY EVERYWHERE
         video.muted = true;
         video.setAttribute("muted", "");
         video.volume = 0;
-
         video.autoplay = true;
         video.setAttribute("autoplay", "");
-
-        // Inline playback (iOS)
         video.playsInline = true;
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
-
-        // More eager preload so first frame shows quickly
         video.preload = "auto";
-
-        // No native controls UI
         video.controls = false;
-
-        // Make sure it fills the cell from the very start
         video.style.display   = "block";
         video.style.width     = "100%";
         video.style.height    = "100%";
         video.style.objectFit = "cover";
 
-        // Force first frame paint (especially on iOS Safari)
         video.addEventListener(
           "loadeddata",
           () => {
@@ -437,7 +434,6 @@ function renderProjects(projects) {
           { once: true }
         );
 
-        // Optional: on desktop, allow hover pause/play if you ever want it
         if (mqHoverDesktop.matches) {
           video.addEventListener("mouseenter", () => {
             if (video.paused) {
@@ -459,14 +455,14 @@ function renderProjects(projects) {
           : "";
         img.loading = "lazy";
 
-        // Fill the cell immediately, no tiny image phase
-        img.style.display   = "block";
-        img.style.width     = "100%";
-        img.style.height    = "100%";
-        img.style.objectFit = "cover";
+        // Fill the cell immediately
+        img.style.display = "block";
+        img.style.width   = "100%";
+        img.style.height  = "100%";
         img.style.transition = "width 0.3s ease, height 0.3s ease";
+        img.style.objectFit = "cover";
 
-        // Check if image is vertical once loaded, then add cursor + click handler
+        // ---- ZOOM FEATURE: Check if image is vertical once loaded ----
         const checkVerticalAndSetup = () => {
           if (img.naturalHeight > img.naturalWidth) {
             img.style.cursor = "pointer";
@@ -502,60 +498,70 @@ function renderProjects(projects) {
     projectEl.appendChild(track);
 
     const mediaCount = (project.media || []).length;
-    projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
 
+    //  detect "one video only" rows
+    const isSingleVideoRow =
+      mediaCount === 1 && project.media[0] && project.media[0].type === "video";
+
+    if (isSingleVideoRow) {
+      projectEl.classList.add("single-video-row");
+
+      const vw = project.media[0].width;
+      const vh = project.media[0].height;
+
+      // If we have poster dimensions from Sanity, use them
+      if (vw && vh) {
+        // aspect-ratio: width / height
+        projectEl.style.aspectRatio = `${vw} / ${vh}`;
+      } else {
+        // fallback if no metadata
+        projectEl.style.aspectRatio = "16 / 9";
+      }
+    }
+
+    projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
     if (mediaCount > 1) {
       projectEl.classList.add("has-multiple");
+    } else if (mediaCount === 1) {
+      // mark rows that have exactly one item
+      projectEl.classList.add("single-item");
     }
 
     main.appendChild(projectEl);
   });
 
-  // ---------------------------------------
-// ADD "PRESS FOR SOUND" OVERLAY ON FIRST VIDEO
-// ---------------------------------------
-setTimeout(() => {
-  // only if we haven't already added it
-  if (document.getElementById("soundPrompt")) return;
+  // PRESS FOR SOUND overlay (unchanged)
+  setTimeout(() => {
+    if (document.getElementById("soundPrompt")) return;
+    const firstVideo = document.querySelector(".project-item video");
+    if (!firstVideo) return;
+    const parentCell = firstVideo.closest(".project-item");
+    if (!parentCell) return;
+    parentCell.style.position = "relative";
 
-  const firstVideo = document.querySelector(".project-item video");
-  if (!firstVideo) return;
+    const overlay = document.createElement("div");
+    overlay.id = "soundPrompt";
+    overlay.innerText = "press for sound";
+    overlay.style.position = "absolute";
+    overlay.style.left = "50%";
+    overlay.style.top = "50%";
+    overlay.style.transform = "translate(-50%, -50%)";
+    overlay.style.background = "rgba(0,0,0,0.6)";
+    overlay.style.color = "white";
+    overlay.style.padding = "6px 10px";
+    overlay.style.fontSize = "11px";
+    overlay.style.letterSpacing = "0.5px";
+    overlay.style.borderRadius = "4px";
+    overlay.style.zIndex = "9999";
+    overlay.style.pointerEvents = "none";
+    overlay.style.opacity = "1";
+    overlay.style.transition = "opacity 0.25s ease";
 
-  // attach to the exact cell that holds the first video
-  const parentCell = firstVideo.closest(".project-item");
-  if (!parentCell) return;
+    parentCell.appendChild(overlay);
+  }, 100);
 
-  // ensure the cell can position the overlay
-  parentCell.style.position = "relative";
-
-  const overlay = document.createElement("div");
-  overlay.id = "soundPrompt";
-  overlay.innerText = "press for sound";
-
-  // center inside the video cell
-  overlay.style.position = "absolute";
-  overlay.style.left = "50%";
-  overlay.style.top = "50%";
-  overlay.style.transform = "translate(-50%, -50%)";
-  overlay.style.background = "rgba(0,0,0,0.6)";
-  overlay.style.color = "white";
-  overlay.style.padding = "6px 10px";
-  overlay.style.fontSize = "11px";
-  overlay.style.letterSpacing = "0.5px";
-  overlay.style.borderRadius = "4px";
-  overlay.style.zIndex = "9999";
-  overlay.style.pointerEvents = "none";
-  overlay.style.opacity = "1";
-  overlay.style.transition = "opacity 0.25s ease";
-
-  parentCell.appendChild(overlay);
-}, 100);
-
-
-  // 1) quick first pass
   setProjectHeights();
 
-  // 2) after media has a moment, refine heights + init scroll/autoplay
   setTimeout(() => {
     setProjectHeights();
     setupAutoScrollHints();
@@ -574,11 +580,21 @@ function setProjectHeights() {
     const items = projectEl.querySelectorAll(".project-item");
     if (!items.length) return;
 
+    // 👇 NEW: let CSS aspect-ratio handle single video rows
+    if (projectEl.classList.contains("single-video-row")) {
+      projectEl.style.height = "auto";
+      items.forEach((item) => {
+        const media = item.querySelector("img, video");
+        if (media) {
+          media.style.width = "100%";
+          media.style.height = "100%";
+        }
+      });
+      return;
+    }
+
     const firstMedia = items[0].querySelector("img, video");
     if (!firstMedia) return;
-
-    // reset so we can recalc
-    projectEl.style.height = "auto";
 
     function applyHeightsFromFirst(naturalW, naturalH) {
       if (!naturalW || !naturalH) return;
@@ -588,20 +604,14 @@ function setProjectHeights() {
         window.innerWidth ||
         document.documentElement.clientWidth;
 
-      const ratio = naturalH / naturalW;
-      const rowHeight = Math.round(rowWidth * ratio);
-
-      // 1) fix the row height from the first image
+      const rowHeight = Math.round(rowWidth * (naturalH / naturalW));
       projectEl.style.height = rowHeight + "px";
 
-      // 2) make EVERY item in this row share that height,
-      //    and set its width based on its own aspect ratio
       items.forEach((item) => {
         const media = item.querySelector("img, video");
         if (!media) return;
 
         let mw, mh;
-
         if (media.tagName === "IMG") {
           mw = media.naturalWidth;
           mh = media.naturalHeight;
@@ -609,24 +619,37 @@ function setProjectHeights() {
           mw = media.videoWidth;
           mh = media.videoHeight;
         }
-
         if (!mw || !mh) return;
 
-        const aspect = mw / mh;
-        const itemWidth = Math.round(rowHeight * aspect);
+        const itemWidth = Math.round(rowHeight * (mw / mh));
 
-        item.style.width = itemWidth + "px";   // 👈 side-by-side, same height
+        item.style.width = itemWidth + "px";
+        media.style.width = "100%";
+        media.style.height = "100%";
+        media.style.objectFit = "cover";
       });
     }
 
-    // First media might not be loaded yet → same logic as before
+    // if we have width/height metadata from Sanity, use it immediately.
+    const metaW = parseFloat(projectEl.dataset.firstW || "");
+    const metaH = parseFloat(projectEl.dataset.firstH || "");
+    if (metaW && metaH) {
+      applyHeightsFromFirst(metaW, metaH);
+      return; // no need to wait for image/video to load
+    }
+
+    // Fallback: existing behavior if metadata is missing
     if (firstMedia.tagName === "IMG") {
       if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
         applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight);
       } else {
         firstMedia.addEventListener(
           "load",
-          () => applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight),
+          () =>
+            applyHeightsFromFirst(
+              firstMedia.naturalWidth,
+              firstMedia.naturalHeight
+            ),
           { once: true }
         );
       }
@@ -637,14 +660,17 @@ function setProjectHeights() {
       } else {
         video.addEventListener(
           "loadedmetadata",
-          () => applyHeightsFromFirst(video.videoWidth, video.videoHeight),
+          () =>
+            applyHeightsFromFirst(
+              video.videoWidth,
+              video.videoHeight
+            ),
           { once: true }
         );
       }
     }
   });
 }
-
 
 // On the first click/tap anywhere on the page, turn sound on for all videos
 document.addEventListener(
@@ -669,23 +695,21 @@ async function loadProjectsFromSanity() {
   *[_type == "photoCollection"] | order(order asc) {
     _id,
     title,
-"media": images[]{
-  _type == "imageItem" => {
-    "type": "image",
-    "url": asset->url,
-    "width": asset->metadata.dimensions.width,
-    "height": asset->metadata.dimensions.height
-  },
-  _type == "videoItem" => {
-    "type": "video",
-    "muxPlaybackId": muxVideo.asset->playbackId,
-    "posterUrl": poster.asset->url,
-    //use poster's dimensions so we know aspect ratio before video loads
-    "width": poster.asset->metadata.dimensions.width,
-    "height": poster.asset->metadata.dimensions.height
-  }
-}
-
+    "media": images[]{
+      _type == "imageItem" => {
+        "type": "image",
+        "url": asset->url,
+        "width": asset->metadata.dimensions.width,
+        "height": asset->metadata.dimensions.height
+      },
+      _type == "videoItem" => {
+        "type": "video",
+        "muxPlaybackId": muxVideo.asset->playbackId,
+        "posterUrl": poster.asset->url,
+        "width": poster.asset->metadata.dimensions.width,
+        "height": poster.asset->metadata.dimensions.height
+      }
+    }
   }
   `;
 
@@ -788,7 +812,6 @@ async function loadClientsFromSanity() {
     console.error("Error loading client list from Sanity:", err);
   }
 }
-
 
 // When coming back from the Index page via back/forward cache
 window.addEventListener("pageshow", (event) => {
