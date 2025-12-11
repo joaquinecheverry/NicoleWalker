@@ -7,7 +7,7 @@ import { localPatternImages } from "./pattern-images.js";
 // Shuffle a copy so order feels random each load
 let patternSources = [...localPatternImages].sort(() => Math.random() - 0.5);
 
-// 🔧 TUNING CONSTANTS
+//  TUNING CONSTANTS
 // Thumbnails (in memory, BEFORE orbit scaling)
 const THUMB_MAX_DIM_DESKTOP = 100;
 const THUMB_MAX_DIM_MOBILE  = 80;
@@ -428,6 +428,41 @@ function initPatternOrbitView(settings) {
   });
 }
 
+// ------- CLIENT LIST FROM SANITY (INDEX PAGE) -------
+async function loadClientsFromSanity() {
+  const projectId  = "hk21ncs5";
+  const dataset    = "production";
+  const apiVersion = "2023-05-03";
+
+  // Assumes you have a `clientList` document with a `clientsText` field
+  const query = `
+    *[_type == "clientList"][0]{
+      clientsText
+    }
+  `;
+
+  const encodedQuery = encodeURIComponent(query);
+  const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=${encodedQuery}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const doc  = data.result;
+
+    const target = document.getElementById("list");
+    if (!target) return;
+
+    if (doc && doc.clientsText) {
+      // take the big pasted list and preserve line breaks
+      target.innerHTML = doc.clientsText
+        .trim()
+        .replace(/\n/g, "<br>");
+    }
+  } catch (err) {
+    console.error("Error loading clients for index page:", err);
+  }
+}
+
 // ------------- BOOT -------------
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -455,4 +490,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   const settings = await fetchIndexSettingsFromSanity();
   // 2) init orbit with those settings (fallback to defaults if null)
   initPatternOrbitView(settings);
+  loadClientsFromSanity();
 });

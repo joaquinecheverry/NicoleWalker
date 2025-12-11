@@ -128,8 +128,25 @@ body.home-page #nav:not(.pattern-active) #Title {
     height: 100%;          /* fill the row height */
     margin: 0;
     padding: 0;
-    width: 100vw;          /* 👈 this is causing the issues */
+    width: auto;          /* 👈 this is causing the issues */
     overflow: hidden; 
+}
+
+/* Desktop-only: rows that are 3× copies of one portrait */
+/* Desktop-only: rows that are 3× copies of one portrait */
+@media (min-width: 769px) {
+  .project.triptych-row {
+    overflow-x: hidden; /* no horizontal scroll for this row */
+  }
+
+  .project.triptych-row .project-track {
+    justify-content: center;
+  }
+
+  .project.triptych-row .project-item {
+    /* width will be set in JS so we can make 3 fit perfectly */
+    flex: 0 0 auto;
+  }
 }
 
 

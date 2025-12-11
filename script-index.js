@@ -87,3 +87,4 @@ function renderIndexGrid(images) {
 
 // kick it off
 loadIndexImages();
+

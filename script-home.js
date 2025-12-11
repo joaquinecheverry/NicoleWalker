@@ -340,12 +340,35 @@ function renderProjects(projects) {
     const track = document.createElement("div");
     track.classList.add("project-track");
 
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-    const mqHoverDesktop = window.matchMedia(
-      "(hover: hover) and (pointer: fine)"
-    );
+    const isMobile = window.innerWidth <= 768;
+    const mediaOriginal = project.media || [];
 
-    (project.media || []).forEach((item) => {
+    // ---------- DESKTOP-ONLY TRIPTYCH LOGIC ----------
+    // If we're on desktop and this row has exactly 1 IMAGE,
+    // render it 3 times and mark the row as "triptych".
+    const isDesktopLike = window.innerWidth >= 900;
+    let mediaToRender = mediaOriginal;
+    let isTriptychRow = false;
+
+    if (isDesktopLike && mediaOriginal.length === 1) {
+      const single = mediaOriginal[0];
+      const isString = typeof single === "string";
+      const rawSrc   = isString ? single : single.url;
+      const type     = isString
+        ? (rawSrc && (rawSrc.endsWith(".mp4") || rawSrc.endsWith(".webm") ? "video" : "image"))
+        : (single.type || "image");
+
+      if (type === "image") {
+        mediaToRender = [single, single, single]; // 👈 make the triptych
+        isTriptychRow = true;
+        projectEl.classList.add("triptych-row");
+      }
+    }
+
+    // ----------------------------------------------
+    // BUILD CELLS (using mediaToRender, not original)
+    // ----------------------------------------------
+    mediaToRender.forEach((item) => {
       const isString = typeof item === "string";
       const rawSrc   = isString ? item : item.url;
       const muxId    = !isString ? item.muxPlaybackId : null;
@@ -361,12 +384,16 @@ function renderProjects(projects) {
       const cell = document.createElement("div");
       cell.classList.add("project-item");
 
+      // for triptych rows, force each cell to be 1/3 of the row
+      if (isTriptychRow) {
+        cell.style.flex = "0 0 calc(100% / 3)";
+      }
+
       let el;
 
       if (type === "video") {
         const video = document.createElement("video");
 
-        // Use Mux HLS URL when available
         if (muxId) {
           const source = document.createElement("source");
           source.src = `https://stream.mux.com/${muxId}.m3u8`;
@@ -376,7 +403,6 @@ function renderProjects(projects) {
           video.src = rawSrc;
         }
 
-        // Poster thumbnail (gives proper thumbnail + avoids tiny black video)
         if (poster) {
           const sep = poster.includes("?") ? "&" : "?";
           const targetW = isMobile ? 500 : 1500;
@@ -384,33 +410,22 @@ function renderProjects(projects) {
         }
 
         video.loop = true;
-
-        // REQUIRED FOR TRUE AUTOPLAY EVERYWHERE
         video.muted = true;
         video.setAttribute("muted", "");
         video.volume = 0;
-
         video.autoplay = true;
         video.setAttribute("autoplay", "");
-
-        // Inline playback (iOS)
         video.playsInline = true;
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
-
-        // More eager preload so first frame shows quickly
         video.preload = "auto";
-
-        // No native controls UI
         video.controls = false;
 
-        // Make sure it fills the cell from the very start
         video.style.display   = "block";
         video.style.width     = "100%";
         video.style.height    = "100%";
         video.style.objectFit = "cover";
 
-        // Force first frame paint (especially on iOS Safari)
         video.addEventListener(
           "loadeddata",
           () => {
@@ -423,18 +438,6 @@ function renderProjects(projects) {
           { once: true }
         );
 
-        // Optional: on desktop, allow hover pause/play if you ever want it
-        if (mqHoverDesktop.matches) {
-          video.addEventListener("mouseenter", () => {
-            if (video.paused) {
-              video.play().catch(() => {});
-            }
-          });
-          video.addEventListener("mouseleave", () => {
-            video.pause();
-          });
-        }
-
         el = video;
       } else {
         const img = document.createElement("img");
@@ -445,7 +448,6 @@ function renderProjects(projects) {
           : "";
         img.loading = "lazy";
 
-        // Fill the cell immediately, no tiny image phase
         img.style.display   = "block";
         img.style.width     = "100%";
         img.style.height    = "100%";
@@ -460,8 +462,14 @@ function renderProjects(projects) {
 
     projectEl.appendChild(track);
 
-    const mediaCount = (project.media || []).length;
-    projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
+    const mediaCount = mediaToRender.length;
+
+    // For triptych rows we DON'T want horizontal scroll
+    if (isTriptychRow) {
+      projectEl.style.overflowX = "hidden";
+    } else {
+      projectEl.style.overflowX = mediaCount <= 1 ? "hidden" : "auto";
+    }
 
     if (mediaCount > 1) {
       projectEl.classList.add("has-multiple");
@@ -470,46 +478,39 @@ function renderProjects(projects) {
     main.appendChild(projectEl);
   });
 
-  // ---------------------------------------
-// ADD "PRESS FOR SOUND" OVERLAY ON FIRST VIDEO
-// ---------------------------------------
-setTimeout(() => {
-  // only if we haven't already added it
-  if (document.getElementById("soundPrompt")) return;
+  // "press for sound" overlay stays unchanged
+  setTimeout(() => {
+    if (document.getElementById("soundPrompt")) return;
 
-  const firstVideo = document.querySelector(".project-item video");
-  if (!firstVideo) return;
+    const firstVideo = document.querySelector(".project-item video");
+    if (!firstVideo) return;
 
-  // attach to the exact cell that holds the first video
-  const parentCell = firstVideo.closest(".project-item");
-  if (!parentCell) return;
+    const parentCell = firstVideo.closest(".project-item");
+    if (!parentCell) return;
 
-  // ensure the cell can position the overlay
-  parentCell.style.position = "relative";
+    parentCell.style.position = "relative";
 
-  const overlay = document.createElement("div");
-  overlay.id = "soundPrompt";
-  overlay.innerText = "press for sound";
+    const overlay = document.createElement("div");
+    overlay.id = "soundPrompt";
+    overlay.innerText = "press for sound";
 
-  // center inside the video cell
-  overlay.style.position = "absolute";
-  overlay.style.left = "50%";
-  overlay.style.top = "50%";
-  overlay.style.transform = "translate(-50%, -50%)";
-  overlay.style.background = "rgba(0,0,0,0.6)";
-  overlay.style.color = "white";
-  overlay.style.padding = "6px 10px";
-  overlay.style.fontSize = "11px";
-  overlay.style.letterSpacing = "0.5px";
-  overlay.style.borderRadius = "4px";
-  overlay.style.zIndex = "9999";
-  overlay.style.pointerEvents = "none";
-  overlay.style.opacity = "1";
-  overlay.style.transition = "opacity 0.25s ease";
+    overlay.style.position = "absolute";
+    overlay.style.left = "50%";
+    overlay.style.top = "50%";
+    overlay.style.transform = "translate(-50%, -50%)";
+    overlay.style.background = "rgba(0,0,0,0.6)";
+    overlay.style.color = "white";
+    overlay.style.padding = "6px 10px";
+    overlay.style.fontSize = "11px";
+    overlay.style.letterSpacing = "0.5px";
+    overlay.style.borderRadius = "4px";
+    overlay.style.zIndex = "9999";
+    overlay.style.pointerEvents = "none";
+    overlay.style.opacity = "1";
+    overlay.style.transition = "opacity 0.25s ease";
 
-  parentCell.appendChild(overlay);
-}, 100);
-
+    parentCell.appendChild(overlay);
+  }, 100);
 
   // 1) quick first pass
   setProjectHeights();
@@ -523,6 +524,8 @@ setTimeout(() => {
   }, 250);
 }
 
+
+
 // -----------------------------
 // MATCH ROW HEIGHT TO FIRST IMAGE
 // -----------------------------
@@ -530,16 +533,14 @@ function setProjectHeights() {
   const projects = document.querySelectorAll(".project");
 
   projects.forEach((projectEl) => {
-    const items = projectEl.querySelectorAll(".project-item");
-    if (!items.length) return;
-
-    const firstMedia = items[0].querySelector("img, video");
+    const firstMedia = projectEl.querySelector(
+      ".project-item:first-child img, .project-item:first-child video"
+    );
     if (!firstMedia) return;
 
-    // reset so we can recalc
     projectEl.style.height = "auto";
 
-    function applyHeightsFromFirst(naturalW, naturalH) {
+    function applyHeightFromDimensions(naturalW, naturalH) {
       if (!naturalW || !naturalH) return;
 
       const rowWidth =
@@ -548,61 +549,56 @@ function setProjectHeights() {
         document.documentElement.clientWidth;
 
       const ratio = naturalH / naturalW;
-      const rowHeight = Math.round(rowWidth * ratio);
+      let targetHeight;
 
-      // 1) fix the row height from the first image
-      projectEl.style.height = rowHeight + "px";
+      if (projectEl.classList.contains("triptych-row") && window.innerWidth >= 900) {
+        // 👉 desktop triptych: 3 images across → each is 1/3 width
+        targetHeight = Math.round((rowWidth / 3) * ratio);
 
-      // 2) make EVERY item in this row share that height,
-      //    and set its width based on its own aspect ratio
-      items.forEach((item) => {
-        const media = item.querySelector("img, video");
-        if (!media) return;
+        // enforce 1/3 width per cell
+        const cells = projectEl.querySelectorAll(".project-item");
+        cells.forEach((cell) => {
+          cell.style.flex = "0 0 calc(100% / 3)";
+        });
+      } else {
+        // normal rows: first image sets the whole row height
+        targetHeight = Math.round(rowWidth * ratio);
+      }
 
-        let mw, mh;
-
-        if (media.tagName === "IMG") {
-          mw = media.naturalWidth;
-          mh = media.naturalHeight;
-        } else {
-          mw = media.videoWidth;
-          mh = media.videoHeight;
-        }
-
-        if (!mw || !mh) return;
-
-        const aspect = mw / mh;
-        const itemWidth = Math.round(rowHeight * aspect);
-
-        item.style.width = itemWidth + "px";   // 👈 side-by-side, same height
-      });
+      projectEl.style.height = targetHeight + "px";
     }
 
-    // First media might not be loaded yet → same logic as before
     if (firstMedia.tagName === "IMG") {
       if (firstMedia.complete && firstMedia.naturalWidth && firstMedia.naturalHeight) {
-        applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight);
+        applyHeightFromDimensions(firstMedia.naturalWidth, firstMedia.naturalHeight);
       } else {
         firstMedia.addEventListener(
           "load",
-          () => applyHeightsFromFirst(firstMedia.naturalWidth, firstMedia.naturalHeight),
+          () =>
+            applyHeightFromDimensions(
+              firstMedia.naturalWidth,
+              firstMedia.naturalHeight
+            ),
           { once: true }
         );
       }
     } else if (firstMedia.tagName === "VIDEO") {
       const video = firstMedia;
       if (video.readyState >= 1 && video.videoWidth && video.videoHeight) {
-        applyHeightsFromFirst(video.videoWidth, video.videoHeight);
+        applyHeightFromDimensions(video.videoWidth, video.videoHeight);
       } else {
         video.addEventListener(
           "loadedmetadata",
-          () => applyHeightsFromFirst(video.videoWidth, video.videoHeight),
+          () => applyHeightFromDimensions(video.videoWidth, video.videoHeight),
           { once: true }
         );
       }
     }
   });
 }
+
+
+
 
 
 // On the first click/tap anywhere on the page, turn sound on for all videos
@@ -628,17 +624,20 @@ async function loadProjectsFromSanity() {
   *[_type == "photoCollection"] | order(order asc) {
     _id,
     title,
-    "media": images[]{
-      _type == "imageItem" => {
-        "type": "image",
-        "url": asset->url
-      },
-      _type == "videoItem" => {
-        "type": "video",
-        "muxPlaybackId": muxVideo.asset->playbackId,
-        "posterUrl": poster.asset->url
-      }
-    }
+"media": images[]{
+  _type == "imageItem" => {
+    "type": "image",
+    "url": asset->url,
+    "width": asset->metadata.dimensions.width,
+    "height": asset->metadata.dimensions.height
+  },
+  _type == "videoItem" => {
+    "type": "video",
+    "muxPlaybackId": muxVideo.asset->playbackId,
+    "posterUrl": poster.asset->url
+  }
+}
+
   }
   `;
 
@@ -669,6 +668,80 @@ async function loadProjectsFromSanity() {
   }
 }
 
+// -----------------------------
+// UTILITY: simple HTML escaper
+// -----------------------------
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// -----------------------------
+// LOAD CLIENT LIST FROM SANITY
+// -----------------------------
+async function loadClientsFromSanity() {
+  const el = document.getElementById("list");
+  if (!el) return;
+
+  const projectId  = "hk21ncs5";
+  const dataset    = "production";
+  const apiVersion = "2023-05-03";
+
+  // This supports BOTH:
+  // - clientList{ clientsText: "Acne Studios\nH&M\n..." }
+  // - clientList{ clients: ["Acne Studios", "H&M", ...] }
+  const query = `
+    *[_type == "clientList"][0]{
+      clientsText,
+      clients
+    }
+  `;
+
+  const url = `https://${projectId}.api.sanity.io/v${apiVersion}/data/query/${dataset}?query=${encodeURIComponent(query)}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const doc = data.result;
+
+    if (!doc) {
+      console.warn("No clientList document found in Sanity");
+      return;
+    }
+
+    let lines = [];
+
+    // CASE 1: big textarea where you paste the whole list
+    if (doc.clientsText) {
+      lines = doc.clientsText
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+    }
+
+    // CASE 2: array of strings
+    if ((!lines.length) && Array.isArray(doc.clients)) {
+      lines = doc.clients
+        .map((c) => (typeof c === "string" ? c : c?.name || ""))
+        .filter(Boolean);
+    }
+
+    if (!lines.length) {
+      console.warn("clientList found, but no lines to render");
+      return;
+    }
+
+    el.innerHTML = lines.map((name) => escapeHtml(name)).join("<br>");
+  } catch (err) {
+    console.error("Error loading client list from Sanity:", err);
+  }
+}
+
+
 // When coming back from the Index page via back/forward cache
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
@@ -678,3 +751,4 @@ window.addEventListener("pageshow", (event) => {
 
 // kick it off
 loadProjectsFromSanity();
+loadClientsFromSanity();
